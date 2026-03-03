@@ -46,4 +46,4 @@ urllib3==2.5.0
 watchdog==6.0.0
 streamlit
 pandas
-matplotlib
+matplotlib==3.7.2
