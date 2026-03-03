@@ -146,7 +146,7 @@ SPORT_DB = {
     "Пейнтбол": {"sport_type":"Командный","health":["I","II","III"], "equipment":[],"environment":["улица"],"description":"Командная стратегия и тактика."},
     "Скакалка": {"sport_type":"На развитие выносливости","health":["I","II","III"], "equipment":["скакалка"],"environment":["зал","улица"],"description":"Кардио и координация."},
     "Гантели": {"sport_type":"Силовая","health":["I","II","III"], "equipment":["гантели"],"environment":["дом","зал"],"description":"Силовые упражнения с гантелями."},
-    "Турник": {"sport_type":"Силовая","health":["I","II","III"], "equipment":["турник"],"environment":["улица","дом"],"description":"Силовые упражнения с весом собственного тела."}
+    "Воркаут": {"sport_type":"Силовая","health":["I","II","III"], "equipment":["Воркаут"],"environment":["улица","дом"],"description":"Силовые упражнения с весом собственного тела."}
 }
 
 # Функции для визуализации
@@ -281,7 +281,7 @@ with tab_profile:
     st.session_state['profile']['sex'] = st.selectbox("Пол", options=["м","ж","не выбирать"], index=0 if st.session_state['profile'].get('sex','м')=='м' else 1)
     st.session_state['profile']['activity_level'] = st.selectbox("Уровень подготовки", options=["новичок","средний","продвинутый"], index=["новичок","средний","продвинутый"].index(st.session_state['profile'].get('activity_level','средний')))
     st.session_state['profile']['environment_pref'] = st.multiselect("Предпочитаемое место тренировок", options=["дом","зал","улица","бассейн"], default=st.session_state['profile'].get('environment_pref',["дом"]))
-    st.session_state['profile']['equipment'] = st.multiselect("Инвентарь", options=["гантели","скакалка","коврик","мяч","турник"], default=st.session_state['profile'].get('equipment',[]))
+    st.session_state['profile']['equipment'] = st.multiselect("Инвентарь", options=["гантели","скакалка","коврик","мяч","Воркаут"], default=st.session_state['profile'].get('equipment',[]))
     if st.session_state['profile']['age'] <= 17:
         st.session_state['profile']['health_group'] = st.selectbox("Группа здоровья (дети I–V)", options=["I","II","III","IV","V"], index=["I","II","III","IV","V"].index(st.session_state['profile'].get('health_group','I')))
     else:
@@ -396,9 +396,7 @@ with tab_phys:
         "приседания": st.session_state['profile']['squats'],
         "планка": st.session_state['profile']['plank_sec']
     }
-    fig = plot_progress_figure(current_scores)
-    st.pyplot(fig)
-    
+
     history_list = st.session_state.get('progress_history', [])
     fig = plot_progress_figure(current_scores)
     st.pyplot(fig)
