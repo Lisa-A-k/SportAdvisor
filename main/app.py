@@ -398,8 +398,11 @@ with tab_phys:
     }
     fig = plot_progress_figure(current_scores)
     st.pyplot(fig)
-
-    history_list = load_json("../../OneDrive/Desktop/PythonProject4/progress_data.json", [])
+    
+    history_list = st.session_state.get('progress_history', [])
+    fig = plot_progress_figure(current_scores)
+    st.pyplot(fig)
+    
     if len(history_list) >= 2:
         prev_entry = history_list[-2]
         prev_scores = prev_entry["scores"]
@@ -410,7 +413,6 @@ with tab_phys:
             st.write(f"{emoji} {k}: {'+' if v > 0 else ''}{v}")
     else:
         st.info("Нет предыдущих замеров для сравнения — пройдите тест позже для отслеживания прогресса.")
-
 
 # КАЛЕНДАРЬ
 with tab_calendar:
@@ -632,3 +634,34 @@ with tab_statistics:
         ax3.set_yticks(range(0, max(week_counts) + 2))
         ax3.set_title("Выполнено дней по неделям месяца")
         st.pyplot(fig3)
+        
+#Кнопки сохранения и загрузки данных
+st.markdown("---")
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button('💾 Скачать мой прогресс'):
+        import json
+        data = {
+            "profile": st.session_state.get('profile', {}),
+            "progress_history": st.session_state.get('progress_history', [])
+        }
+        json_str = json.dumps(data, ensure_ascii=False, indent=2)
+        st.download_button(
+            label='📥 Скачать JSON',
+            data=json_str,
+            file_name='my_sport_progress.json',
+            mime='application/json'
+        )
+
+with col2:
+    uploaded = st.file_uploader('📤 Загрузить прогресс', type=['json'])
+    if uploaded:
+        import json
+        data = json.load(uploaded)
+        if 'profile' in data:
+            st.session_state['profile'] = data['profile']
+        if 'progress_history' in data:
+            st.session_state['progress_history'] = data['progress_history']
+        st.success('Данные загружены! Обновите страницу.')        
+        
