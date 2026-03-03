@@ -576,12 +576,15 @@ with tab_calendar:
 # СТАТИСТИКА
 with tab_statistics:
     st.header("📈 Статистика")
-    history_list = load_json("../../OneDrive/Desktop/PythonProject4/progress_data.json", [])
+    history_list = st.session_state.get('progress_history', [])
     if history_list:
         current_entry = history_list[-1]
         current_scores = current_entry["scores"]
         current_reps = current_entry["repetition_history"]
-
+    else:
+        current_scores = {}
+        current_reps = []
+        
         # Статистика по выбранному месяцу
         st.subheader("Статистика месяца")
         month_keys = [d.isoformat() for d in month_days if d.month == month]
