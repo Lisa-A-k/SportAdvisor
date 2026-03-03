@@ -36,18 +36,16 @@ def save_profile(profile_data, rep_history):
         json.dump(save_data, f, ensure_ascii=False, indent=2)
 
 def load_json(path, default):
-    if os.path.exists(path):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return default
+    # На Streamlit Cloud просто возвращаем данные из памяти или default
+    if 'saved_data' in st.session_state:
+        return st.session_state['saved_data']
     return default
 
 def save_json(path, obj_to_save):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(obj_to_save, f, ensure_ascii=False, indent=2)
-
+    # На Streamlit Cloud сохраняем только в памяти
+    st.session_state['saved_data'] = obj_to_save
+    return True
+    
 def load_feedback():
     if os.path.exists(FEEDBACK_FILE):
         try:
