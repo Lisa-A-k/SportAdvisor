@@ -690,30 +690,64 @@ with tab_statistics:
         
 #Кнопки сохранения и загрузки данных
 st.markdown("---")
+st.subheader("💾 Управление данными")
+st.info("⚠️ Данные хранятся только пока открыта вкладка. Скачайте их перед закрытием!")
+
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button('💾 Скачать мой прогресс'):
+    if st.button('💾 Скачать мои данные', type='primary'):
         import json
+        from datetime import datetime
+        
+        # Собираем ВСЕ данные для сохранения
         data = {
             "profile": st.session_state.get('profile', {}),
-            "progress_history": st.session_state.get('progress_history', [])
+            "progress_history": st.session_state.get('progress_history', []),
+            "feedback_list": st.session_state.get('feedback_list', {}),
+            "rest_days": st.session_state.get('rest_days', [6]),
+            "view_year": st.session_state.get('view_year', date.today().year),
+            "view_month": st.session_state.get('view_month', date.today().month),
+            "saved_at": datetime.now().isoformat()
         }
+        
         json_str = json.dumps(data, ensure_ascii=False, indent=2)
+        
         st.download_button(
-            label='📥 Скачать JSON',
+            label='📥 Скачать файл данных (JSON)',
             data=json_str,
-            file_name='my_sport_progress.json',
-            mime='application/json'
+            file_name=f'sportadvisor_data_{date.today()}.json',
+            mime='application/json',
+            key='download_btn'
         )
 
 with col2:
-    uploaded = st.file_uploader('📤 Загрузить прогресс', type=['json'])
+    uploaded = st.file_uploader('📤 Загрузить мои данные', type=['json'], key='uploader')
     if uploaded:
-        import json
-        data = json.load(uploaded)
-        if 'profile' in data:
-            st.session_state['profile'] = data['profile']
-        if 'progress_history' in data:
-            st.session_state['progress_history'] = data['progress_history']
-        st.success('Данные загружены! Обновите страницу.')      
+        try:
+            import json
+            data = json.load(uploaded)
+            
+            # Восстанавливаем ВСЕ данные
+            if 'profile' in 
+                st.session_state['profile'] = data['profile']
+            if 'progress_history' in 
+                st.session_state['progress_history'] = data['progress_history']
+            if 'feedback_list' in data:
+                st.session_state['feedback_list'] = data['feedback_list']
+            if 'rest_days' in 
+                st.session_state['rest_days'] = data['rest_days']
+            if 'view_year' in 
+                st.session_state['view_year'] = data['view_year']
+            if 'view_month' in 
+                st.session_state['view_month'] = data['view_month']
+            
+            st.success('✅ Данные загружены! Страница будет обновлена...')
+            
+            # Автоматическое обновление после загрузки
+            import time
+            time.sleep(1)
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f'❌ Ошибка при загрузке: {str(e)}')
