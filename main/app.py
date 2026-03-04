@@ -71,7 +71,7 @@ if "profile" not in st.session_state:
         "preferred_session_min": 30,
         "lifestyle": "умеренно активный",
         "fatigue": "иногда",
-        "flexibility_reach": "нет",
+        "flexibility_reach": 3,
         "psych_group": "",
         "rest_days": [6],
     }
@@ -155,11 +155,16 @@ def compute_qualities(personal_profile):
     #Ловкость
     agility_from_plank = personal_profile.get('plank_sec', 0) / 40
     agility_from_balance = 2 if personal_profile.get('balance_test') == 'да' else 0  # Баланс даёт бонус
-    agility_from_flexibility = (personal_profile.get('flexibility_reach', 3) - 1) * 0.25 # 1->0, 5->2 балла
+    flex_val = personal_profile.get('flexibility_reach', 3)
+    try:
+        flex_val = int(flex_val)
+    except (ValueError, TypeError):
+        flex_val = 3
+    agility_from_flexibility = (flex_val - 1) * 0.25
     agility = min(10, round(agility_from_plank + agility_from_flexibility + agility_from_balance))
 
     #Гибкость
-    flexibility_quality = min(10, round(personal_profile.get('flexibility_reach', 3) * 2))
+    flexibility_quality = min(10, round(flex_val * 2))
 
     #Координация
     core_plank = min(6, personal_profile.get('plank_sec', 0) / 25)  # 150 сек = 6 баллов
