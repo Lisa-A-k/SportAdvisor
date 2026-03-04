@@ -10,30 +10,25 @@ import calendar
 
 # КОНСТАНТЫ
 DAYS_OF_WEEK = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
-PROFILE_FILE = "../../OneDrive/Desktop/PythonProject4/user_profile.json"
 MONTHS_RU_NUM = {
     1: "Январь", 2: "Февраль", 3: "Март", 4: "Апрель",
     5: "Май", 6: "Июнь", 7: "Июль", 8: "Август",
     9: "Сентябрь", 10: "Октябрь", 11: "Ноябрь", 12: "Декабрь"
 }
-FEEDBACK_FILE = "../../OneDrive/Desktop/PythonProject4/training_feedback.json"
 
 # ФУНКЦИИ РАБОТЫ С ФАЙЛАМИ
 def load_profile():
-    if os.path.exists(PROFILE_FILE):
-        with open(PROFILE_FILE, "r", encoding="utf-8") as f:
-            profile_data = json.load(f)
-        return profile_data
-    return {"profile": {}, "repetition_history": {}}
+    # Берем из session_state или возвращаем пустые данные
+    return {
+        "profile": st.session_state.get('profile', {}),
+        "repetition_history": st.session_state.get('repetition_history', {})
+    }
 
 def save_profile(profile_data, rep_history):
-    save_data = {
-        "profile": profile_data,
-        "repetition_history": rep_history,
-        "last_update": datetime.now().isoformat()
-    }
-    with open(PROFILE_FILE, "w", encoding="utf-8") as f:
-        json.dump(save_data, f, ensure_ascii=False, indent=2)
+    # Сохраняем в session_state
+    st.session_state['profile'] = profile_data
+    st.session_state['repetition_history'] = rep_history
+    return True
 
 def load_json(path, default):
     # На Streamlit Cloud просто возвращаем данные из памяти или default
@@ -50,9 +45,7 @@ def load_feedback():
     return st.session_state.get('feedback_list', {})
 
 def save_feedback(feedback):
-    if 'feedback_list' not in st.session_state:
-        st.session_state['feedback_list'] = []
-    st.session_state['feedback_list'].append(feedback)
+    st.session_state['feedback_list'] = feedback
     return True
 
 #  ЗАГРУЗКА ДАННЫХ
