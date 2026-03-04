@@ -365,7 +365,13 @@ with tab_phys:
         plank_sec = st.number_input("Планка (секунды)", min_value=0, max_value=2000, value=st.session_state['profile'].get('plank_sec',0))
     with col2:
         fatigue = st.selectbox("Как часто чувствуете усталость после умеренной нагрузки?", ["никогда","редко","иногда","часто"])
-        flexibility_reach = st.select_slider("Оцените, насколько вы можете дотянуться до пальцев ног (не сгибая коленей):",options=[1, 2, 3, 4, 5],value=st.session_state['profile'].get('flexibility_reach', 3),format_func=lambda x: {1: "Совсем не могу", 2: "Дотягиваюсь до голени", 3: "Дотягиваюсь до лодыжек", 4: "Немного касаюсь", 5: "Легко дотягиваюсь до пальцев"}[x])
+        lex_val = st.session_state['profile'].get('flexibility_reach', 3)
+        try:
+            flex_val = int(flex_val)
+            if flex_val < 1 or flex_val > 5:
+                flex_val = 3
+        except (ValueError, TypeError):
+            flex_val = 3
         preferred_session_min = st.slider("Удобная длительность тренировки (мин)", 15, 120, st.session_state['profile'].get('preferred_session_min',30))
         st.markdown("**Сможете ли вы постоять на одной ноге с закрытыми глазами 10 секунд?**")
         balance_test = st.radio("Баланс", ["да", "нет"],index=["да", "нет"].index(st.session_state['profile'].get('balance_test', 'нет')))
