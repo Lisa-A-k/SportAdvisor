@@ -358,8 +358,7 @@ with tab_psych:
 with tab_phys:
     st.header("Физический тест")
     col1, col2 = st.columns(2)
-    
-    with col1:о
+    with col1:
         lifestyle = st.selectbox("Образ жизни", 
                                  ["малоподвижный","умеренно активный","активный"],
                                  index=["малоподвижный","умеренно активный","активный"].index(
