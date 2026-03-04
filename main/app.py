@@ -286,7 +286,6 @@ with tab_profile:
     else:
         st.session_state['profile']['health_group'] = st.selectbox("Группа здоровья (взрослые)", options=["I","II","IIIa","IIIb"], index=["I","II","IIIa","IIIb"].index(st.session_state['profile'].get('health_group','I')))
     if st.button("Сохранить профиль"):
-        save_json(PROFILE_FILE, st.session_state['profile'])
         st.success("Профиль сохранён локально")
 
 # Тест на выбор спорта
@@ -353,7 +352,6 @@ with tab_psych:
 
     # Сохранение результатов теста
     st.session_state['profile']["psych_group"] = top_group
-    save_json(PROFILE_FILE, {"profile": st.session_state['profile'], "repetition_history": st.session_state['repetition_history']})
     st.success("Результат теста сохранён в ваш профиль.")
 
 # ФИЗИЧЕСКИЙ ТЕСТ
@@ -401,7 +399,6 @@ with tab_phys:
         
     st.session_state['progress_history'].append(new_entry)
 
-    save_json(PROFILE_FILE, st.session_state['profile'])
     st.success("Результаты сохранены! История обновлена.")
     st.rerun() 
 
@@ -463,7 +460,6 @@ with tab_calendar:
             if set(selected_rest_days_names) != set(st.session_state['rest_days']):
                 st.session_state['rest_days'] = selected_rest_days_names
                 st.session_state['profile']['rest_days'] = selected_rest_days_names
-                save_json(PROFILE_FILE, st.session_state['profile'])
                 st.rerun()
             st.session_state['rest_days'] = selected_rest_days_names
             if len(selected_rest_days_names) == 0:
