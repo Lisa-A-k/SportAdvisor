@@ -471,52 +471,42 @@ with tab_phys:
 # КАЛЕНДАРЬ
 with tab_calendar:
     st.header("📅 Календарь тренировок")
+    year = st.session_state.view_year
+    month = st.session_state.view_month
+    
     col_nav = st.columns([1,6,1])
     with col_nav[0]:
         if st.button("← Пред. месяц"):
-            go_prev_month()
+            m = month - 1
+            y = year
+            if m < 1:
+                m = 12
+                y -= 1
+            st.session_state.view_year = y
+            st.session_state.view_month = m
+            st.session_state.selected_date = None
+            st.rerun()
+            
     with col_nav[1]:
         month_name_ru = MONTHS_RU_NUM[st.session_state.view_month]
         st.markdown(f"### {month_name_ru} {st.session_state.view_year}")
     with col_nav[2]:
         if st.button("След. месяц →"):
-            go_next_month()
-    # Выбор дней отдыха
-    # Используем боковую панель
-    with st.sidebar:
-        st.header("Настройки календаря")
-
-        # Виджет multiselect для выбора дней отдыха
-        selected_rest_days_names = st.multiselect(
-            "Выберите дни отдыха",
-            options=list(range(7)),
-            format_func=lambda x: DAYS_OF_WEEK[x],
-            default=st.session_state['rest_days'],
-            key='rest_days_selector'
-        )
-
-        # Проверяем ограничения
-        if len(selected_rest_days_names) == 7:
-            st.error("Нельзя выбрать все 7 дней")
-            # Возвращаем предыдущее значение
-            selected_rest_days_names = st.session_state['rest_days']
-        else:
-            if set(selected_rest_days_names) != set(st.session_state['rest_days']):
-                st.session_state['rest_days'] = selected_rest_days_names
-                st.session_state['profile']['rest_days'] = selected_rest_days_names
-                st.rerun()
-            st.session_state['rest_days'] = selected_rest_days_names
-            if len(selected_rest_days_names) == 0:
-                st.warning("Не выбрано дней отдыха.")
-
-    year = st.session_state.view_year
-    month = st.session_state.view_month
+            m = month + 1
+            y = year
+            if m > 12:
+                m = 1
+                y += 1
+            st.session_state.view_year = y
+            st.session_state.view_month = m
+            st.session_state.selected_date = None
+            st.rerun()
+            
     cal = calendar.Calendar(firstweekday=0)
-    month_days = list(cal.itermonthdates(year, month))
-
-    feedback = load_feedback()
-    REST_DAYS = st.session_state['rest_days']
-    USER_PROGRESS = { # Пример прогресса
+    month_days = list(cal.itermonthdates(st.session_state.view_year, st.session_state.view_month)) 
+#Генерация плана
+    rest_days = st.session_state.get('rest_days', [6])
+    USER_PROGRESS = {
         "подтягивания": st.session_state['profile'].get('push-ups', 0),
         "отжимания": st.session_state['profile'].get('push-ups', 0),
         "приседания": st.session_state['profile'].get('squats', 0),
@@ -524,11 +514,13 @@ with tab_calendar:
         "выпады": 15,
         "скручивания": 20
     }
-    monthly_plan = generate_monthly_plan(year, month, REST_DAYS, USER_PROGRESS)
-
+    monthly_plan = generate_monthly_plan(st.session_state.view_year, st.session_state.view_month, rest_days, USER_PROGRESS)
+    feedback = load_feedback()
+    
+    # ОТРИСОВКА СЕТКИ
     weekdays = ["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота","Воскресенье"]
-    cols = st.columns(7)
-    for i, c in enumerate(cols):
+    cols_header = st.columns(7)
+    for i, c in enumerate(cols_header):
         c.markdown(f"**{weekdays[i]}**")
 
     today = date.today()
@@ -537,48 +529,39 @@ with tab_calendar:
         cols = st.columns(7)
         for i, d in enumerate(week):
             col = cols[i]
-            is_current_month = (d.month == month)
+            is_current_month = (d.month == st.session_state.view_month)  # <-- Сравниваем с session_state!
 
             if is_current_month:
                 iso = d.isoformat()
                 fb = feedback.get(iso, {})
                 emoji = fb.get("emoji", "")
                 comment = fb.get("comment", "")
-                focus = fb.get("focus", "")
-                duration = fb.get("duration", 0)
-                has_data = bool(fb)
                 label = f"{d.day}"
-                # Определение фона ячейки
+                
+                # Фон ячейки
                 day_heading = f"<div style='padding:6px; border-radius:6px'>{label}</div>"
                 if d == today:
-                    day_heading = f"<div style='background:#fffacd; padding:6px; border-radius:6px'>{label}</div>"  # Светло-зелёный для сегодня
-                elif d.weekday() in REST_DAYS and is_current_month:
-                    day_heading = f"<div style='background:#e6ffe6; padding:6px; border-radius:6px'>{label}</div>"  # Зелёный фон для отдыха
-                elif has_data:
-                    day_heading = f"<div style='background:#e6f0ff; padding:6px; border-radius:6px'>{label}</div>"  # Светло-синий фон для тренировки
+                    day_heading = f"<div style='background:#fffacd; padding:6px; border-radius:6px'>{label}</div>"
+                elif d.weekday() in rest_days:
+                    day_heading = f"<div style='background:#e6ffe6; padding:6px; border-radius:6px'>{label}</div>"
+                elif fb:
+                    day_heading = f"<div style='background:#e6f0ff; padding:6px; border-radius:6px'>{label}</div>"
 
+                # План тренировок
                 if iso in monthly_plan:
                     exercises_list = monthly_plan[iso]["упражнения"]
                     exercises_html = "<br>".join(exercises_list)
-                    # Добавляем тип (отдых/тренировка) к упражнениям
                     plan_type = monthly_plan[iso]["тип"]
                     day_heading_with_plan = f"{day_heading}<div style='font-size:12px;color:#555;'><b>{plan_type.capitalize()}:</b> {exercises_html}</div>"
                     col.markdown(day_heading_with_plan, unsafe_allow_html=True)
                 else:
                     col.markdown(day_heading, unsafe_allow_html=True)
-
-                info_lines = ""
-                if emoji:
-                    info_lines += f"{emoji} "
-                if comment:
-                    short = (comment[:40] + "...") if len(comment) > 40 else comment
-                    info_lines += f"<div style='font-size:12px;color:#333'>{short}</div>"
-                if focus and not info_lines:
-                    info_lines += f"<div style='font-size:12px;color:#666'>{focus}</div>"
-
+                
+                # Кнопка открытия
                 if col.button(f"Открыть {iso}", key=f"btn_{iso}"):
                     st.session_state.selected_date = iso
-
+                
+                # Быстрые эмодзи
                 quick_cols = col.columns([1, 1, 1, 1, 1, 1])
                 QUICK = ["💪", "🔥", "😅", "❤️", "😴", "✔️"]
                 for qi, qc in enumerate(QUICK):
@@ -586,19 +569,13 @@ with tab_calendar:
                     if quick_cols[qi].button(style_label, key=f"quick_{iso}_{qi}"):
                         fb_cur = feedback.get(iso, {})
                         fb_cur["emoji"] = qc
-                        fb_cur.setdefault("comment", fb_cur.get("comment", ""))
-                        fb_cur.setdefault("focus", fb_cur.get("focus", ""))
-                        fb_cur.setdefault("duration", fb_cur.get("duration", 0))
-                        fb_cur.setdefault("exercises", fb_cur.get("exercises", []))
                         feedback[iso] = fb_cur
                         save_feedback(feedback)
                         st.session_state.selected_date = iso
             else:
                 col.empty()
-
-
-    # ПРАВАЯ ПАНЕЛЬ:редактор дня
-    with st.sidebar:
+                
+with st.sidebar:
         st.header("Редактор дня")
         sel = st.session_state.get("selected_date")
         if not sel:
@@ -608,11 +585,10 @@ with tab_calendar:
             fb = feedback.get(sel, {})
             emoji_default = fb.get("emoji", "⚪️")
             comment_default = fb.get("comment", "")
-            focus_default = fb.get("focus", "")
             duration_default = fb.get("duration", 30)
-            exercises_default = ", ".join(fb.get("exercises", []))
 
-            new_emoji = st.radio("Эмодзи", ["⚪️","💪","🔥","😅","❤️","😴","✔️"], index=["⚪️","💪","🔥","😅","❤️","😴","✔️"].index(emoji_default))
+            new_emoji = st.radio("Эмодзи", ["⚪️","","🔥","😅","❤️","😴","✔️"], 
+                                 index=["⚪️","💪","🔥","","❤️","😴","✔️"].index(emoji_default))
             new_comment = st.text_area("Комментарий", value=comment_default)
             new_duration = st.number_input("Длительность (мин)", min_value=0, max_value=600, value=int(duration_default))
 
@@ -624,7 +600,6 @@ with tab_calendar:
                 }
                 save_feedback(feedback)
                 st.success("Сохранено ✅")
-                st.session_state[f"saved_{sel}"] = datetime.now().isoformat()
 
 # СТАТИСТИКА
 with tab_statistics:
