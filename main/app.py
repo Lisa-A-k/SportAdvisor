@@ -729,17 +729,17 @@ with col2:
             data = json.load(uploaded)
             
             # Восстанавливаем ВСЕ данные
-            if 'profile' in 
+            if 'profile' in data:
                 st.session_state['profile'] = data['profile']
-            if 'progress_history' in 
+            if 'progress_history' in data:
                 st.session_state['progress_history'] = data['progress_history']
             if 'feedback_list' in data:
                 st.session_state['feedback_list'] = data['feedback_list']
-            if 'rest_days' in 
+            if 'rest_days' in data:
                 st.session_state['rest_days'] = data['rest_days']
-            if 'view_year' in 
+            if 'view_year' in data:
                 st.session_state['view_year'] = data['view_year']
-            if 'view_month' in 
+            if 'view_month' in data:
                 st.session_state['view_month'] = data['view_month']
             
             st.success('✅ Данные загружены! Страница будет обновлена...')
