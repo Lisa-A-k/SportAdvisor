@@ -47,17 +47,13 @@ def save_json(path, obj_to_save):
     return True
     
 def load_feedback():
-    if os.path.exists(FEEDBACK_FILE):
-        try:
-            with open(FEEDBACK_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return {}
-    return {}
+    return st.session_state.get('feedback_list', {})
 
 def save_feedback(feedback):
-    with open(FEEDBACK_FILE, "w", encoding="utf-8") as f:
-        json.dump(feedback, f, ensure_ascii=False, indent=2)
+    if 'feedback_list' not in st.session_state:
+        st.session_state['feedback_list'] = []
+    st.session_state['feedback_list'].append(feedback)
+    return True
 
 #  ЗАГРУЗКА ДАННЫХ
 data = load_profile()
@@ -82,7 +78,7 @@ if "profile" not in st.session_state:
         "preferred_session_min": 30,
         "lifestyle": "умеренно активный",
         "fatigue": "иногда",
-        "flexibility": "нет",
+        "flexibility_reach": "нет",
         "psych_group": "",
         "rest_days": [6],
     }
@@ -237,35 +233,45 @@ EXERCISES_BY_CATEGORY = {
 
 def generate_monthly_plan(year, month, rest_days, user_progress):
     cal = calendar.Calendar(firstweekday=0)
-    month_days_all = list(cal.itermonthdates(year, month))  # Все дни, включая другие месяцы
-    # Отфильтруем, чтобы остались только дни текущего месяца
+    month_days_all = list(cal.itermonthdates(year, month))
     month_days_filtered = [d for d in month_days_all if d.month == month]
+    
+    if not month_days_filtered:
+        return {}
+        
     first_day_of_month_index = month_days_all.index(month_days_filtered[0])
     categories = ["руки/спина", "ноги", "пресс", "растяжка", "кардио", "комплексная"]
     plan = {}
-    cat_day_counter = 0  # Индекс для чередования категорий (0-5)
-    for day in month_days:
+    cat_day_counter = 0
+    for day in month_days_filtered:
         weekday = day.weekday()
         if weekday in rest_days:
             plan[day.isoformat()] = {"тип": "отдых", "упражнения": []}
         else:
-            # Выбираем категорию на основе cat_day_counter
             category = categories[cat_day_counter % len(categories)]
-            cat_day_counter += 1  # Увеличиваем только если тренируемся
-            exercises = EXERCISES_BY_CATEGORY[category]
+            cat_day_counter += 1
+            
+            exercises = EXERCISES_BY_CATEGORY.get(category, ["активность"])
             exercises_with_load = []
+            
             current_day_index_in_all = month_days_all.index(day)
             weeks_passed = (current_day_index_in_all - first_day_of_month_index) // 7
+            
             for ex in exercises:
                 base = user_progress.get(ex, 10)
                 load = int(base + weeks_passed * 2)
-                if "планка" in ex or "бабочка" in ex or "собака, мордой в пол" in ex or "кошка-корова" in ex or "наклон к полу" in ex or "подтягивание колена к груди":
+                
+                time_exercises = ["планка", "бабочка", "собака, мордой в пол", 
+                                  "кошка-корова", "наклон к полу", "подтягивание колена к груди"]
+                
+                if any(t in ex for t in time_exercises):
                     exercises_with_load.append(f"{ex} — {load} сек")
                 else:
                     exercises_with_load.append(f"{ex} — {load} раз")
+            
             plan[day.isoformat()] = {"тип": category, "упражнения": exercises_with_load}
     return plan
-
+    
 # КОНФИГУРАЦИЯ СТРАНИЦЫ
 st.set_page_config(page_title="SportAdvisor", layout="wide")
 st.title("🏋️ SportAdvisor")
@@ -387,8 +393,24 @@ with tab_phys:
             "balance_test": balance_test,
             "jumps_30s": int(jumps_30s)
         })
-        save_json(PROFILE_FILE, st.session_state['profile'])
-        st.success("Результаты физического теста сохранены.")
+    new_entry = {
+        "date": datetime.now().isoformat(),
+        "scores": compute_qualities(st.session_state['profile']),
+        "repetition_history": {
+            "отжимания": st.session_state['profile']['push-ups'],
+            "приседания": st.session_state['profile']['squats'],
+            "планка": st.session_state['profile']['plank_sec']
+        }
+    }
+    
+    if 'progress_history' not in st.session_state:
+        st.session_state['progress_history'] = []
+        
+    st.session_state['progress_history'].append(new_entry)
+
+    save_json(PROFILE_FILE, st.session_state['profile'])
+    st.success("Результаты сохранены! История обновлена.")
+    st.rerun() 
 
     current_scores = compute_qualities(st.session_state['profile'])
     current_reps = {
