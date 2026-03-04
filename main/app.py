@@ -353,18 +353,35 @@ with tab_psych:
     # Сохранение результатов теста
     st.session_state['profile']["psych_group"] = top_group
     st.success("Результат теста сохранён в ваш профиль.")
-
+    
 # ФИЗИЧЕСКИЙ ТЕСТ
 with tab_phys:
     st.header("Физический тест")
     col1, col2 = st.columns(2)
-    with col1:
-        lifestyle = st.selectbox("Образ жизни", ["малоподвижный","умеренно активный","активный"])
-        pushups = st.number_input("Отжимания подряд (сколько можете сделать)", min_value=0, max_value=500, value=st.session_state['profile'].get('push-ups',0))
-        squats = st.number_input("Приседания за 1 минуту", min_value=0, max_value=500, value=st.session_state['profile'].get('squats',0))
-        plank_sec = st.number_input("Планка (секунды)", min_value=0, max_value=2000, value=st.session_state['profile'].get('plank_sec',0))
+    
+    with col1:о
+        lifestyle = st.selectbox("Образ жизни", 
+                                 ["малоподвижный","умеренно активный","активный"],
+                                 index=["малоподвижный","умеренно активный","активный"].index(
+                                     st.session_state['profile'].get('lifestyle','умеренно активный')
+                                 ))
+        pushups = st.number_input("Отжимания подряд (сколько можете сделать)", 
+                                  min_value=0, max_value=500, 
+                                  value=int(st.session_state['profile'].get('push-ups',0)))
+        squats = st.number_input("Приседания за 1 минуту", 
+                                 min_value=0, max_value=500, 
+                                 value=int(st.session_state['profile'].get('squats',0)))
+        plank_sec = st.number_input("Планка (секунды)", 
+                                    min_value=0, max_value=2000, 
+                                    value=int(st.session_state['profile'].get('plank_sec',0)))
+    
     with col2:
-        fatigue = st.selectbox("Как часто чувствуете усталость после умеренной нагрузки?", ["никогда","редко","иногда","часто"])
+        fatigue = st.selectbox("Как часто чувствуете усталость после умеренной нагрузки?", 
+                               ["никогда","редко","иногда","часто"],
+                               index=["никогда","редко","иногда","часто"].index(
+                                   st.session_state['profile'].get('fatigue','иногда')
+                               ))
+        
         flex_val = st.session_state['profile'].get('flexibility_reach', 3)
         try:
             flex_val = int(flex_val)
@@ -372,8 +389,8 @@ with tab_phys:
                 flex_val = 3
         except (ValueError, TypeError):
             flex_val = 3
-            
-            flexibility_reach = st.select_slider(
+
+        flexibility_reach = st.select_slider(
             "Оцените, насколько вы можете дотянуться до пальцев ног (не сгибая коленей):",
             options=[1, 2, 3, 4, 5],
             value=flex_val,
@@ -384,12 +401,18 @@ with tab_phys:
                 4: "Немного касаюсь", 
                 5: "Легко дотягиваюсь до пальцев"
             }[x]
-                
-        preferred_session_min = st.slider("Удобная длительность тренировки (мин)", 15, 120, st.session_state['profile'].get('preferred_session_min',30))
+        )
+        
+        preferred_session_min = st.slider("Удобная длительность тренировки (мин)", 
+                                          15, 120, 
+                                          int(st.session_state['profile'].get('preferred_session_min',30)))
         st.markdown("**Сможете ли вы постоять на одной ноге с закрытыми глазами 10 секунд?**")
-        balance_test = st.radio("Баланс", ["да", "нет"],index=["да", "нет"].index(st.session_state['profile'].get('balance_test', 'нет')))
+        balance_test = st.radio("Баланс", ["да", "нет"],
+                                index=["да", "нет"].index(st.session_state['profile'].get('balance_test', 'нет')))
         st.markdown("**Сколько раз вы можете подпрыгнуть на месте за 30 секунд?**")
-        jumps_30s = st.number_input("Прыжки за 30 секунд",min_value=0, max_value=100,value=st.session_state['profile'].get('jumps_30s', 0))
+        jumps_30s = st.number_input("Прыжки за 30 секунд",
+                                    min_value=0, max_value=100,
+                                    value=int(st.session_state['profile'].get('jumps_30s', 0)))
 
     if st.button("Сохранить результаты теста и обновить профиль", key="save_and_calc_button"):
         st.session_state['profile'].update({
@@ -403,31 +426,29 @@ with tab_phys:
             "balance_test": balance_test,
             "jumps_30s": int(jumps_30s)
         })
-    new_entry = {
-        "date": datetime.now().isoformat(),
-        "scores": compute_qualities(st.session_state['profile']),
-        "repetition_history": {
-            "отжимания": st.session_state['profile']['push-ups'],
-            "приседания": st.session_state['profile']['squats'],
-            "планка": st.session_state['profile']['plank_sec']
-        }
-    }
-    
-    if 'progress_history' not in st.session_state:
-        st.session_state['progress_history'] = []
         
-    st.session_state['progress_history'].append(new_entry)
+        # Сохранение в историю прогресса
+        new_entry = {
+            "date": datetime.now().isoformat(),
+            "scores": compute_qualities(st.session_state['profile']),
+            "repetition_history": {
+                "отжимания": st.session_state['profile']['push-ups'],
+                "приседания": st.session_state['profile']['squats'],
+                "планка": st.session_state['profile']['plank_sec']
+            }
+        }
+        
+        if 'progress_history' not in st.session_state:
+            st.session_state['progress_history'] = []
+        
+        st.session_state['progress_history'].append(new_entry)
+        
+        st.success("Результаты сохранены! История обновлена.")
+        st.rerun()
 
-    st.success("Результаты сохранены! История обновлена.")
-    st.rerun() 
-
+    #Отображение графика и сравнения
     current_scores = compute_qualities(st.session_state['profile'])
-    current_reps = {
-        "отжимания": st.session_state['profile']['push-ups'],
-        "приседания": st.session_state['profile']['squats'],
-        "планка": st.session_state['profile']['plank_sec']
-    }
-
+    
     history_list = st.session_state.get('progress_history', [])
     fig = plot_progress_figure(current_scores)
     st.pyplot(fig)
