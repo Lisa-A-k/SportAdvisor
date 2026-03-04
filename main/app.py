@@ -716,5 +716,21 @@ with col2:
             st.session_state['profile'] = data['profile']
         if 'progress_history' in data:
             st.session_state['progress_history'] = data['progress_history']
-        st.success('Данные загружены! Обновите страницу.')        
+        st.success('Данные загружены! Обновите страницу.')      
         
+# Кнопка для отображения QR-кода
+with st.sidebar:
+    st.divider()
+    st.markdown("### 📱 QR-код приложения")
+    st.write("Отсканируйте, чтобы открыть на телефоне:")
+    
+    # Получаем URL приложения
+    app_url = https://lisa-a-k-sportadvisor-mainapp-mtkd0r.streamlit.app
+    
+    # Генерируем QR-код через API
+    st.image(f"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={app_url}", 
+             caption="Отсканируйте камерой телефона")
+    
+    # Кнопка для копирования ссылки
+    if st.button("📋 Копировать ссылку"):
+        st.code(app_url)       
