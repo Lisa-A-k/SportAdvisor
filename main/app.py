@@ -575,7 +575,29 @@ with tab_calendar:
             else:
                 col.empty()
                 
-with st.sidebar:
+   #Боковая панель
+    with st.sidebar:
+        st.header("Настройки календаря")
+  
+        selected_rest_days_names = st.multiselect(
+            "Выберите дни отдыха",
+            options=list(range(7)),
+            format_func=lambda x: DAYS_OF_WEEK[x],
+            default=st.session_state.get('rest_days', [6]),
+            key='rest_days_selector'
+        )
+        
+        if len(selected_rest_days_names) == 7:
+            st.error("Нельзя выбрать все 7 дней")
+        elif len(selected_rest_days_names) == 0:
+            st.warning("Не выбрано дней отдыха")
+        else:
+            st.session_state['rest_days'] = selected_rest_days_names
+            st.session_state['profile']['rest_days'] = selected_rest_days_names
+        
+        st.divider()  # Разделительная линия
+        
+        # РЕДАКТОР ДНЯ
         st.header("Редактор дня")
         sel = st.session_state.get("selected_date")
         if not sel:
