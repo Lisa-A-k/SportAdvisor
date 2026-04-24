@@ -230,17 +230,76 @@ def get_progressive_block(day: date, training_weekdays: List[int]) -> int:
 def build_exercise_list_for_category(category: str, profile: Dict, base_load: int) -> List[str]:
     equipment = set(profile.get("equipment", []))
     exercises: List[str] = []
+    push_ups = max(1, int(profile.get("push_ups", 0)))
+    squats = max(1, int(profile.get("squats", 0)))
+    plank_sec = max(10, int(profile.get("plank_sec", 0)))
+    jumps_30s = max(1, int(profile.get("jumps_30s", 0)))
+    progression_multiplier = 1 + min(base_load - 1, 4) * 0.08
+
+    base_exercise_values = {
+        "отжимания": max(3, round(push_ups * 0.6 * progression_multiplier)),
+        "тяга резинки": max(6, round(push_ups * 0.7 * progression_multiplier)),
+        "лодочка": max(8, round(plank_sec / 6 * progression_multiplier)),
+        "планка с касанием плеч": max(10, round(plank_sec / 5 * progression_multiplier)),
+        "приседания": max(6, round(squats * 0.7 * progression_multiplier)),
+        "выпады": max(6, round(squats * 0.35 * progression_multiplier)),
+        "ягодичный мост": max(8, round(squats * 0.5 * progression_multiplier)),
+        "подъемы на носки": max(12, round(squats * 0.8 * progression_multiplier)),
+        "планка": max(15, round(plank_sec * 0.6 * progression_multiplier)),
+        "скручивания": max(8, round(squats * 0.45 * progression_multiplier)),
+        "велосипед": max(10, round(jumps_30s * 0.6 * progression_multiplier)),
+        "подъем ног": max(6, round(plank_sec / 8 * progression_multiplier)),
+        "наклон к полу": max(20, round(plank_sec * 0.5 * progression_multiplier)),
+        "бабочка": max(20, round(plank_sec * 0.5 * progression_multiplier)),
+        "кошка-корова": max(20, round(plank_sec * 0.45 * progression_multiplier)),
+        "поза ребенка": max(25, round(plank_sec * 0.55 * progression_multiplier)),
+        "бег на месте": max(20, round(jumps_30s * 1.1 * progression_multiplier)),
+        "берпи": max(4, round(push_ups * 0.35 * progression_multiplier)),
+        "прыжки": max(10, round(jumps_30s * 0.8 * progression_multiplier)),
+        "шаги в планке": max(8, round(push_ups * 0.5 * progression_multiplier)),
+    }
+
 
     for exercise in EXERCISES_BY_CATEGORY[category]:
-        if "планка" in exercise or "наклон" in exercise or "поза" in exercise:
-            exercises.append(f"{exercise} — {20 + base_load * 10} сек")
+        if exercise in {"круг: приседания + отжимания + планка", "выпады + прыжки + пресс"}:
+            if exercise == "круг: приседания + отжимания + планка":
+                circuit_value = max(
+                    1,
+                    round(
+                        (
+                            base_exercise_values["приседания"]
+                            + base_exercise_values["отжимания"]
+                            + max(10, round(base_exercise_values["планка"] / 3))
+                        )
+                        / 3
+                    ),
+                )
+            else:
+                circuit_value = max(
+                    1,
+                    round(
+                        (
+                            base_exercise_values["выпады"]
+                            + base_exercise_values["прыжки"]
+                            + base_exercise_values["скручивания"]
+                        )
+                        / 3
+                    ),
+                )
+            exercises.append(f"{exercise} — {circuit_value} повторений на круг")
+        elif "планка" in exercise or "наклон" in exercise or "поза" in exercise or exercise in {"бабочка", "кошка-корова"}:
+            duration_value = base_exercise_values.get(exercise, max(20, round(plank_sec * 0.5 * progression_multiplier)))
+            exercises.append(f"{exercise} — {duration_value} сек")
         else:
-            exercises.append(f"{exercise} — {8 + base_load * 2} повторений")
+           rep_value = base_exercise_values.get(exercise, max(6, round((push_ups + squats) / 4 * progression_multiplier)))
+            exercises.append(f"{exercise} — {rep_value} повторений")
 
     if category == "руки/спина" and "гантели" in equipment:
-        exercises.append(f"жим гантелей — {6 + base_load * 2} повторений")
+        dumbbell_value = max(6, round(push_ups * 0.6 * progression_multiplier))
+        exercises.append(f"жим гантелей — {dumbbell_value} повторений")
     if category == "кардио" and "скакалка" in equipment:
-        exercises.append(f"прыжки со скакалкой — {30 + base_load * 10} сек")
+       rope_value = max(20, round(jumps_30s * progression_multiplier))
+        exercises.append(f"прыжки со скакалкой — {rope_value} сек")
     if category in {"пресс", "растяжка"} and "коврик" in equipment:
         exercises.append("упражнения на коврике — комфортный темп")
 
