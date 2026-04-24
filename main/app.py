@@ -42,7 +42,10 @@ def plot_progress_figure(scores: dict):
     ax.fill(angles, values, alpha=0.2)
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(labels)
-    ax.set_yticklabels([])
+    ax.set_ylim(0, 10)
+    ax.set_yticks([2, 4, 6, 8, 10])
+    ax.set_yticklabels(["2", "4", "6", "8", "10"])
+    ax.grid(alpha=0.35)
     ax.set_title("Физический профиль", pad=20)
     return fig
 
@@ -113,7 +116,23 @@ def render_psychology_tab():
 
     st.info(f"Ваш психотип: {top_group}")
     st.write(PSYCHOLOGY_GROUPS[top_group]["desc"])
-
+    
+     health_group = st.session_state["profile"].get("health_group")
+    if health_group == "II":
+        st.info(
+            "Для II группы здоровья приложение понижает приоритет высокоинтенсивных видов спорта "
+            "и чаще поднимает в выдаче щадящие и умеренные варианты."
+        )
+    elif health_group == "III":
+        st.warning(
+            "Для III группы здоровья приложение исключает наиболее интенсивные и рискованные виды спорта "
+            "из автоматических рекомендаций."
+        )
+    elif health_group in {"IIIa", "IIIb"}:
+        st.warning(
+            "Для групп здоровья IIIa и IIIb приложение показывает только щадящие варианты активности. "
+            "Это не заменяет допуск врача и индивидуальные медицинские рекомендации."
+        )
     recommendations = recommend_sports(st.session_state["profile"], top_group)
     st.subheader("Рекомендованные виды спорта")
 
@@ -200,6 +219,13 @@ def render_physical_tab():
     fig = plot_progress_figure(current_scores)
     st.pyplot(fig)
 
+    strongest_quality = max(current_scores, key=current_scores.get)
+    weakest_quality = min(current_scores, key=current_scores.get)
+    st.caption(
+        f"Сильнее всего сейчас выражено качество: {strongest_quality.lower()}. "
+        f"Зона для роста: {weakest_quality.lower()}."
+    )
+
     history_list = st.session_state.get("progress_history", [])
     if len(history_list) >= 2:
         previous_scores = history_list[-2]["scores"]
@@ -268,8 +294,10 @@ def render_calendar_tab():
                 st.markdown(f"**{day.day}**")
                 st.caption(badge)
                 if plan["exercises"]:
-                    for exercise in plan["exercises"][:2]:
+                    for exercise in plan["exercises"][:3]:
                         st.write(f"- {exercise}")
+                     if len(plan["exercises"]) > 3:
+                        st.caption(f"Еще упражнений в плане: {len(plan['exercises']) - 3}")
                 else:
                     st.write("Отдых")
 
