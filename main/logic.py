@@ -1,15 +1,19 @@
 from __future__ import annotations
-
 import calendar
 from collections import Counter
-from datetime import date
+from datetime import date,timedelta
 from typing import Dict, List, Optional, Set, Tuple
-
 from data import CONSERVATIVE_SPORTS_FOR_SPECIAL_HEALTH, EXERCISES_BY_CATEGORY, PSYCHOLOGY_GROUPS, SPORT_DB
 
-
 QUALITY_ORDER = ["Сила", "Выносливость", "Ловкость", "Гибкость", "Координация"]
-
+TRAINING_CATEGORY_SEQUENCE = [
+    "руки/спина",
+    "ноги",
+    "пресс",
+    "кардио",
+    "комплексная",
+    "растяжка",
+]
 
 def normalize_health_group(group: str) -> str:
     if not group:
@@ -181,20 +185,60 @@ def recommend_sports(profile: Dict, psych_group: str, limit: int = 5) -> List[Di
 
     recommendations.sort(key=lambda item: item["score"], reverse=True)
     return recommendations[:limit]
+    
+def get_training_weekdays(rest_days: List[int]) -> List[int]:
+    training_days = [day for day in range(7) if day not in rest_days]
+    return training_days or [0, 2, 4]
+
+ - timedelta(days=current_date.weekday())
+
+def get_category_for_day(day: date, training_weekdays: List[int]) -> str:
+    year_anchor = date(day.year, 1, 1)
+    first_monday = year_anchor - timedelta(days=year_anchor.weekday())
+    week_start = day - timedelta(days=day.weekday())
+    week_index = max(0, (week_start - first_monday).days // 7)
+    day_slot = training_weekdays.index(day.weekday())
+    sequence_index = (week_index * len(training_weekdays) + day_slot) % len(TRAINING_CATEGORY_SEQUENCE)
+    return TRAINING_CATEGORY_SEQUENCE[sequence_index]
+
+def get_progressive_block(day: date, training_weekdays: List[int]) -> int:
+    year_anchor = date(day.year, 1, 1)
+    first_monday = year_anchor - timedelta(days=year_anchor.weekday())
+    week_start = day - timedelta(days=day.weekday())
+    week_index = max(0, (week_start - first_monday).days // 7)
+    day_slot = training_weekdays.index(day.weekday())
+    training_days_passed = week_index * len(training_weekdays) + day_slot
+    return max(0, training_days_passed // 6)
+
+
+def build_exercise_list_for_category(category: str, profile: Dict, base_load: int) -> List[str]:
+    equipment = set(profile.get("equipment", []))
+    exercises: List[str] = []
+
+    for exercise in EXERCISES_BY_CATEGORY[category]:
+        if "планка" in exercise or "наклон" in exercise or "поза" in exercise:
+            exercises.append(f"{exercise} — {20 + base_load * 10} сек")
+        else:
+            exercises.append(f"{exercise} — {8 + base_load * 2} повторений")
+
+    if category == "руки/спина" and "гантели" in equipment:
+        exercises.append(f"жим гантелей — {6 + base_load * 2} повторений")
+    if category == "кардио" and "скакалка" in equipment:
+        exercises.append(f"прыжки со скакалкой — {30 + base_load * 10} сек")
+    if category in {"пресс", "растяжка"} and "коврик" in equipment:
+        exercises.append("упражнения на коврике — комфортный темп")
+
+    return exercises
 
 def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: Dict) -> Dict:
     cal = calendar.Calendar(firstweekday=0)
     month_days = [day for day in cal.itermonthdates(year, month) if day.month == month]
 
-    categories = list(EXERCISES_BY_CATEGORY.keys())
     qualities = compute_qualities(profile)
     load_factor = max(1, round(sum(qualities.values()) / len(qualities) / 2))
     preferred_minutes = int(profile.get("preferred_session_min", 30))
     plan = {}
-    year_start = date(year, 1, 1)
-    days_before_month = [year_start.fromordinal(day_number) for day_number in range(year_start.toordinal(), month_days[0].toordinal())]
-    completed_training_days_before_month = sum(1 for current_day in days_before_month if current_day.weekday() not in rest_days)
-    training_day_index = completed_training_days_before_month
+    training_weekdays = get_training_weekdays(rest_days)
 
     for day in month_days:
         if day.weekday() in rest_days:
@@ -207,16 +251,11 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
 
         days_since_year_start = (day - year_start).days
         training_block = max(0, days_since_year_start // 7)
-        category = categories[training_block % len(categories)]
+        category = get_category_for_day(day, training_weekdays)
+        progressive_block = get_progressive_block(day, training_weekdays)
         base_load = load_factor + training_block
-        exercises = []
-
-        for exercise in EXERCISES_BY_CATEGORY[category]:
-            if "планка" in exercise or "наклон" in exercise or "поза" in exercise:
-                exercises.append(f"{exercise} — {20 + base_load * 10} сек")
-            else:
-                exercises.append(f"{exercise} — {8 + base_load * 2} повторений")
-
+        exercises = build_exercise_list_for_category(category, profile, base_load)
+        
         warmup = [
             "разминка суставов — 5 мин",
             "легкая кардио-разминка — 3 мин",
