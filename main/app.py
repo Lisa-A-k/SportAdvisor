@@ -117,7 +117,7 @@ def render_psychology_tab():
     st.info(f"Ваш психотип: {top_group}")
     st.write(PSYCHOLOGY_GROUPS[top_group]["desc"])
     
-     health_group = st.session_state["profile"].get("health_group")
+    health_group = st.session_state["profile"].get("health_group")
     if health_group == "II":
         st.info(
             "Для II группы здоровья приложение понижает приоритет высокоинтенсивных видов спорта "
