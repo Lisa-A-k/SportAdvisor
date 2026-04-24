@@ -21,7 +21,6 @@ def normalize_health_group(group: str) -> str:
 def is_special_health_group(group: str) -> bool:
     return group in {"IIIa", "IIIb"}
 
-
 def allowed_risk_levels_for_health_group(group: str) -> Set[str]:
     if group in {"I"}:
         return {"low", "medium", "high"}
