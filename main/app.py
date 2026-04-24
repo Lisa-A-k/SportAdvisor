@@ -235,6 +235,18 @@ def render_physical_tab():
             prefix = "+" if diff > 0 else ""
             st.write(f"{quality_name}: {prefix}{diff}")
 
+def get_calendar_day_style(day, today, plan: dict, feedback_entry: dict, is_selected: bool) -> tuple[str, str, str]:
+    border = "1px solid rgba(0,0,0,0.08)"
+    if is_selected:
+        border = "3px solid #2f6fed"
+    if day == today:
+        return "#fff3b0", "Сегодня", border
+    if feedback_entry.get("emoji") in {"💪", "🔥", "✅", "❤️"}:
+        return "#cfeccf", "Тренировка выполнена", border
+    if plan.get("type") == "отдых":
+        return "#f8d7da", "День отдыха", border
+    return "#edf2ff", plan.get("type", "Тренировка").capitalize(), border
+
 
 def render_calendar_tab():
     st.header("Календарь тренировок")
@@ -254,8 +266,10 @@ def render_calendar_tab():
             st.session_state["view_month"] = month
             st.session_state["selected_date"] = None
             st.rerun()
+
     with nav_center:
         st.markdown(f"### {MONTHS_RU_NUM[month]} {year}")
+
     with nav_right:
         if st.button("След. месяц →"):
             month += 1
@@ -276,10 +290,24 @@ def render_calendar_tab():
     for index, day_name in enumerate(DAYS_OF_WEEK):
         header_cols[index].markdown(f"**{day_name}**")
 
-    today = date.today()
+    legend_cols = st.columns(3)
+    legend_cols[0].markdown(
+        "<div style='background:#fff3b0;padding:8px;border-radius:8px;text-align:center;'><b>Желтый</b><br>текущий день</div>",
+        unsafe_allow_html=True,
+    )
+    legend_cols[1].markdown(
+        "<div style='background:#cfeccf;padding:8px;border-radius:8px;text-align:center;'><b>Зеленый</b><br>выполненная тренировка</div>",
+        unsafe_allow_html=True,
+    )
+    legend_cols[2].markdown(
+        "<div style='background:#f8d7da;padding:8px;border-radius:8px;text-align:center;'><b>Красный</b><br>день отдыха</div>",
+        unsafe_allow_html=True,
+    )
+
     for week_start in range(0, len(month_days), 7):
         cols = st.columns(7)
-        week = month_days[week_start : week_start + 7]
+        week = month_days[week_start:week_start + 7]
+
         for index, day in enumerate(week):
             col = cols[index]
             if day.month != month:
@@ -289,16 +317,34 @@ def render_calendar_tab():
             iso = day.isoformat()
             plan = monthly_plan.get(iso, {"type": "отдых", "exercises": [], "duration_min": 0})
             fb = feedback.get(iso, {})
-            badge = "Сегодня" if day == today else plan["type"].capitalize()
+            is_selected = st.session_state.get("selected_date") == iso
+            background_color, badge, border_style = get_calendar_day_style(
+                day, today, plan, fb, is_selected
+            )
 
             with col.container(border=True):
-                st.markdown(f"**{day.day}**")
+                st.markdown(
+                    f"""
+                    <div style="
+                        background:{background_color};
+                        padding:10px;
+                        border-radius:10px;
+                        border:{border_style};
+                        min-height:110px;
+                    ">
+                        <div style="font-weight:700;font-size:18px;">{day.day}</div>
+                        <div style="font-size:12px;color:#444;margin-top:4px;">{badge}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
                 st.caption(badge)
-                
+
                 if plan["exercises"]:
                     for exercise in plan["exercises"][:3]:
                         st.write(f"- {exercise}")
-                     if len(plan["exercises"]) > 3:
+                    if len(plan["exercises"]) > 3:
                         st.caption(f"Еще упражнений в плане: {len(plan['exercises']) - 3}")
                 else:
                     st.write("Отдых")
@@ -326,6 +372,7 @@ def render_calendar_tab():
             format_func=lambda day_index: DAYS_OF_WEEK[day_index],
             default=rest_days,
         )
+
         if len(selected_rest_days) == 7:
             st.error("Нельзя сделать отдыхом все 7 дней.")
         else:
@@ -335,12 +382,26 @@ def render_calendar_tab():
         st.divider()
         st.header("Редактор дня")
         selected_date = st.session_state.get("selected_date")
+
         if not selected_date:
             st.info("Выберите день в календаре.")
         else:
             selected_feedback = feedback.get(selected_date, {})
             selected_plan = monthly_plan.get(selected_date, {"duration_min": 30, "exercises": []})
             st.markdown(f"### {selected_date}")
+
+            if selected_date == today.isoformat():
+                st.info("Это текущий день.")
+            elif selected_feedback.get("emoji") in {"💪", "🔥", "✅", "❤️"}:
+                st.success("Этот день отмечен как выполненная тренировка.")
+            elif selected_plan.get("type") == "отдых":
+                st.error("Этот день запланирован как день отдыха.")
+
+            if selected_plan.get("exercises"):
+                st.write("План на день:")
+                for exercise in selected_plan["exercises"]:
+                    st.write(f"- {exercise}")
+
             new_emoji = st.radio(
                 "Эмоция",
                 ["", "💪", "🔥", "😴", "✅", "❤️"],
@@ -353,6 +414,7 @@ def render_calendar_tab():
                 max_value=600,
                 value=int(selected_feedback.get("duration", selected_plan.get("duration_min", 30))),
             )
+
             if st.button("Сохранить день"):
                 feedback[selected_date] = {
                     "emoji": new_emoji,
@@ -361,7 +423,6 @@ def render_calendar_tab():
                 }
                 save_feedback(feedback)
                 st.success("Изменения сохранены.")
-
 
 def render_statistics_tab():
     st.header("Статистика")
