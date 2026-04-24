@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import calendar
 from collections import Counter
+from typing import Dict, List, Optional, Set, Tuple
 
 from data import CONSERVATIVE_SPORTS_FOR_SPECIAL_HEALTH, EXERCISES_BY_CATEGORY, PSYCHOLOGY_GROUPS, SPORT_DB
 
@@ -15,11 +16,13 @@ def normalize_health_group(group: str) -> str:
     if group.startswith("III"):
         return "III"
     return group
-    
+
+
 def is_special_health_group(group: str) -> bool:
     return group in {"IIIa", "IIIb"}
 
-def allowed_risk_levels_for_health_group(group: str) -> set[str]:
+
+def allowed_risk_levels_for_health_group(group: str) -> Set[str]:
     if group in {"I"}:
         return {"low", "medium", "high"}
     if group in {"II"}:
@@ -30,7 +33,8 @@ def allowed_risk_levels_for_health_group(group: str) -> set[str]:
         return {"low"}
     return {"low", "medium"}
 
-def health_group_score_adjustment(group: str, risk_level: str) -> tuple[int, str | None]:
+
+def health_group_score_adjustment(group: str, risk_level: str) -> Tuple[int, Optional[str]]:
     if group == "I":
         return 0, None
     if group == "II":
@@ -49,7 +53,8 @@ def health_group_score_adjustment(group: str, risk_level: str) -> tuple[int, str
             return 12, "щадящий формат подобран с учетом IIIa/IIIb"
     return 0, None
 
-def compute_qualities(profile: dict) -> dict:
+
+def compute_qualities(profile: Dict) -> Dict:
     push_ups = max(0, int(profile.get("push_ups", 0)))
     squats = max(0, int(profile.get("squats", 0)))
     plank_sec = max(0, int(profile.get("plank_sec", 0)))
@@ -59,14 +64,14 @@ def compute_qualities(profile: dict) -> dict:
     fatigue = profile.get("fatigue", "иногда")
     balance_test = profile.get("balance_test", "нет")
 
-    strength = min(10, round(min(5, push_ups / 10) + min(3, squats / 25) + min(3, jumps_30s / 15)))
+    strength = min(10, round(min(5, push_ups / 10) + min(3, squats / 25) + min(2, jumps_30s / 15)))
     fatigue_score = {"никогда": 3, "редко": 2, "иногда": 1, "часто": 0}.get(fatigue, 1)
     endurance = min(10, round(min(5, weekly_activity) + min(3, plank_sec / 75) + fatigue_score))
-    agility = min(10, round(min(5, jumps_30s / 8) + min(2, plank_sec / 30) + (2 if balance_test == "да" else 0)))
+    agility = min(10, round(min(5, jumps_30s / 8) + min(2, squats / 30) + (2 if balance_test == "да" else 0)))
     flexibility = min(10, round(1 + flexibility_reach * 1.8))
     coordination = min(
         10,
-        round(min(3, plank_sec / 60) + min(3,jumps_30s / 15) + min(2, flexibility_reach / 2) + (2 if balance_test == "да" else 0)),
+        round(min(3, plank_sec / 60) + min(3, jumps_30s / 15) + min(2, flexibility_reach / 2) + (2 if balance_test == "да" else 0)),
     )
 
     return {
@@ -78,7 +83,7 @@ def compute_qualities(profile: dict) -> dict:
     }
 
 
-def get_top_psych_group(answers: list[str]) -> tuple[str, dict]:
+def get_top_psych_group(answers: List[str]) -> Tuple[str, Dict]:
     scores = {group_name: 0 for group_name in PSYCHOLOGY_GROUPS}
     for answer_group in answers:
         scores[answer_group] += 1
@@ -86,7 +91,13 @@ def get_top_psych_group(answers: list[str]) -> tuple[str, dict]:
     return top_group, scores
 
 
-def score_sport_match(profile: dict, sport_name: str, sport_info: dict, psych_group: str, qualities: dict) -> tuple[int, list[str]]:
+def score_sport_match(
+    profile: Dict,
+    sport_name: str,
+    sport_info: Dict,
+    psych_group: str,
+    qualities: Dict,
+) -> Tuple[int, List[str]]:
     score = 0
     reasons = []
 
@@ -95,7 +106,8 @@ def score_sport_match(profile: dict, sport_name: str, sport_info: dict, psych_gr
     if health_ok:
         score += 25
         reasons.append("подходит по группе здоровья")
-     raw_health_group = profile.get("health_group", "I")
+
+    raw_health_group = profile.get("health_group", "I")
     risk_level = sport_info.get("risk_level", "medium")
     risk_adjustment, risk_reason = health_group_score_adjustment(raw_health_group, risk_level)
     score += risk_adjustment
@@ -129,6 +141,7 @@ def score_sport_match(profile: dict, sport_name: str, sport_info: dict, psych_gr
     for quality_name, importance in sport_info.get("qualities", {}).items():
         quality_fit += min(qualities.get(quality_name, 0), importance * 2)
     score += quality_fit
+
     top_quality = max(sport_info.get("qualities", {}), key=sport_info.get("qualities", {}).get, default=None)
     if top_quality:
         reasons.append(f"совпадает с вашим профилем по качеству '{top_quality.lower()}'")
@@ -136,7 +149,7 @@ def score_sport_match(profile: dict, sport_name: str, sport_info: dict, psych_gr
     return score, reasons
 
 
-def recommend_sports(profile: dict, psych_group: str, limit: int = 5) -> list[dict]:
+def recommend_sports(profile: Dict, psych_group: str, limit: int = 5) -> List[Dict]:
     qualities = compute_qualities(profile)
     raw_health_group = profile.get("health_group", "I")
     normalized_health = normalize_health_group(raw_health_group)
@@ -153,6 +166,7 @@ def recommend_sports(profile: dict, psych_group: str, limit: int = 5) -> list[di
                 continue
             if sport_info.get("risk_level") in {"medium", "high"}:
                 continue
+
         score, reasons = score_sport_match(profile, sport_name, sport_info, psych_group, qualities)
         recommendations.append(
             {
@@ -170,7 +184,7 @@ def recommend_sports(profile: dict, psych_group: str, limit: int = 5) -> list[di
     return recommendations[:limit]
 
 
-def generate_monthly_plan(year: int, month: int, rest_days: list[int], profile: dict) -> dict:
+def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: Dict) -> Dict:
     cal = calendar.Calendar(firstweekday=0)
     month_days = [day for day in cal.itermonthdates(year, month) if day.month == month]
 
@@ -194,22 +208,32 @@ def generate_monthly_plan(year: int, month: int, rest_days: list[int], profile: 
         training_day_index += 1
         base_load = load_factor + max(0, (training_day_index - 1) // 6)
         exercises = []
-        for exercise in EXERCISES_BY_CATEGORY[category][:3]:
+
+        for exercise in EXERCISES_BY_CATEGORY[category]:
             if "планка" in exercise or "наклон" in exercise or "поза" in exercise:
                 exercises.append(f"{exercise} — {20 + base_load * 10} сек")
             else:
                 exercises.append(f"{exercise} — {8 + base_load * 2} повторений")
 
+        warmup = [
+            "разминка суставов — 5 мин",
+            "легкая кардио-разминка — 3 мин",
+        ]
+        cooldown = [
+            "спокойное дыхание — 2 мин",
+            "заминка и растяжка — 5 мин",
+        ]
+
         plan[day.isoformat()] = {
             "type": category,
-            "duration_min": preferred_minutes,
-            "exercises": exercises,
+            "duration_min": max(preferred_minutes, 25),
+            "exercises": warmup + exercises + cooldown,
         }
 
     return plan
 
 
-def summarize_feedback_for_month(month_days: list, feedback: dict, month: int) -> dict:
+def summarize_feedback_for_month(month_days: List, feedback: Dict, month: int) -> Dict:
     month_keys = [day.isoformat() for day in month_days if day.month == month]
     filled = [key for key in month_keys if feedback.get(key) and feedback[key].get("emoji")]
     durations = [
@@ -217,7 +241,11 @@ def summarize_feedback_for_month(month_days: list, feedback: dict, month: int) -
         for key in month_keys
         if feedback.get(key) and isinstance(feedback[key].get("duration", 0), (int, float))
     ]
-    emoji_counter = Counter(feedback[key].get("emoji") for key in month_keys if feedback.get(key) and feedback[key].get("emoji"))
+    emoji_counter = Counter(
+        feedback[key].get("emoji")
+        for key in month_keys
+        if feedback.get(key) and feedback[key].get("emoji")
+    )
     completion_ratio = len(filled) / len(month_keys) if month_keys else 0
 
     return {
