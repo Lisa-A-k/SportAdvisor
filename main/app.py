@@ -135,7 +135,7 @@ SPORT_DB = {
     "Пейнтбол": {"sport_type":"Командный","health":["I","II","III"], "equipment":[],"environment":["улица"],"description":"Командная стратегия и тактика."},
     "Скакалка": {"sport_type":"На развитие выносливости","health":["I","II","III"], "equipment":["скакалка"],"environment":["зал","улица"],"description":"Кардио и координация."},
     "Гантели": {"sport_type":"Силовая","health":["I","II","III"], "equipment":["гантели"],"environment":["дом","зал"],"description":"Силовые упражнения с гантелями."},
-    "Воркаут": {"sport_type":"Силовая","health":["I","II","III"], "equipment":["Воркаут"],"environment":["улица","дом"],"description":"Силовые упражнения с весом собственного тела."}
+    "Воркаут": {"sport_type":"Силовая","health":["I","II","III"], "equipment":["гантели"],"environment":["улица","дом"],"description":"Силовые упражнения с весом собственного тела."}
 }
 
 # Функции для визуализации
