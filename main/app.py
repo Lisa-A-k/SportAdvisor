@@ -343,18 +343,24 @@ def render_statistics_tab():
 
     st.subheader("Эмоции за месяц")
     if summary["emoji_counter"]:
-         readable_rows = [
-            {
-                "Отметка": emoji,
-                "Расшифровка": EMOJI_LABELS.get(emoji, "Другая реакция"),
-                "Количество": count,
-            }
-            for emoji, count in summary["emoji_counter"].items()
-        ]
+        readable_rows = []
+        for emoji, count in summary["emoji_counter"].items():
+            readable_rows.append(
+                {
+                    "Отметка": emoji,
+                    "Расшифровка": EMOJI_LABELS.get(emoji, "Другая реакция"),
+                    "Количество": count,
+                }
+            )
         df_emoji = pd.DataFrame(readable_rows)
         st.dataframe(df_emoji, hide_index=True)
+        
         fig, ax = plt.subplots()
-        ax.pie(df_emoji["Количество"], labels=df_emoji["Расшифровка"], autopct="%d%%")
+        ax.pie(
+            df_emoji["Количество"],
+            labels=df_emoji["Расшифровка"],
+            autopct="%d%%",
+        )
         ax.set_title("Распределение состояний по тренировкам")
         st.pyplot(fig)
     else:
