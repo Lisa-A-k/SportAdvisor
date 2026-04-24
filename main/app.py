@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import calendar
 from datetime import date, datetime
-
+from typing import Dict, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -29,7 +29,7 @@ EMOJI_LABELS = {
     "": "Без отметки",
 }
 
-def plot_progress_figure(scores: dict):
+def plot_progress_figure(scores: Dict):
     labels = list(scores.keys())
     values = list(scores.values())
     values += values[:1]
@@ -235,7 +235,7 @@ def render_physical_tab():
             prefix = "+" if diff > 0 else ""
             st.write(f"{quality_name}: {prefix}{diff}")
 
-def get_calendar_day_style(day, today, plan: dict, feedback_entry: dict, is_selected: bool) -> tuple[str, str, str]:
+def get_calendar_day_style(day, today, plan: Dict, feedback_entry: Dict, is_selected: bool) -> tuple[str, str, str]:
     border = "1px solid rgba(0,0,0,0.08)"
     if is_selected:
         border = "3px solid #2f6fed"
