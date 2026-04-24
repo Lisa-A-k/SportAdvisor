@@ -18,7 +18,7 @@ from logic import (
     recommend_sports,
     summarize_feedback_for_month,
 )
-from storage import export_app_data, import_app_data, init_session_state, load_feedback, save_feedback
+from storage import export_app_data, import_app_data, init_session_state, load_feedback, save_app_data_to_disk, save_feedback
 
 EMOJI_LABELS = {
     "💪": "Силовая тренировка",
@@ -102,7 +102,7 @@ def render_profile_tab():
         )
 
     st.success("Профиль сохраняется в текущей сессии автоматически.")
-
+    save_app_data_to_disk()
 
 def render_psychology_tab():
     st.header("Тест на выбор спорта")
@@ -213,6 +213,7 @@ def render_physical_tab():
             },
         }
         st.session_state["progress_history"].append(entry)
+        save_app_data_to_disk()
         st.success("Результаты сохранены.")
 
     current_scores = compute_qualities(profile)
@@ -378,6 +379,7 @@ def render_calendar_tab():
         else:
             st.session_state["rest_days"] = selected_rest_days
             st.session_state["profile"]["rest_days"] = selected_rest_days
+            save_app_data_to_disk()
 
         st.divider()
         st.header("Редактор дня")
@@ -482,7 +484,7 @@ def render_statistics_tab():
 def render_data_controls():
     st.markdown("---")
     st.subheader("Управление данными")
-    st.info("Данные хранятся в текущей сессии. Для надёжности можно скачать JSON-файл.")
+    st.info("Данные сохраняются автоматически в локальный JSON-файл. Кнопка ниже нужна только для резервной копии.")
 
     col1, col2 = st.columns(2)
     with col1:
