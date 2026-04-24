@@ -148,7 +148,6 @@ def score_sport_match(
 
     return score, reasons
 
-
 def recommend_sports(profile: Dict, psych_group: str, limit: int = 5) -> List[Dict]:
     qualities = compute_qualities(profile)
     raw_health_group = profile.get("health_group", "I")
@@ -183,7 +182,6 @@ def recommend_sports(profile: Dict, psych_group: str, limit: int = 5) -> List[Di
     recommendations.sort(key=lambda item: item["score"], reverse=True)
     return recommendations[:limit]
 
-
 def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: Dict) -> Dict:
     cal = calendar.Calendar(firstweekday=0)
     month_days = [day for day in cal.itermonthdates(year, month) if day.month == month]
@@ -194,6 +192,9 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
     preferred_minutes = int(profile.get("preferred_session_min", 30))
     plan = {}
     year_start = date(year, 1, 1)
+    days_before_month = [year_start.fromordinal(day_number) for day_number in range(year_start.toordinal(), month_days[0].toordinal())]
+    completed_training_days_before_month = sum(1 for current_day in days_before_month if current_day.weekday() not in rest_days)
+    training_day_index = completed_training_days_before_month
 
     for day in month_days:
         if day.weekday() in rest_days:
@@ -233,7 +234,6 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
 
     return plan
 
-
 def summarize_feedback_for_month(month_days: List, feedback: Dict, month: int) -> Dict:
     month_keys = [day.isoformat() for day in month_days if day.month == month]
     filled = [key for key in month_keys if feedback.get(key) and feedback[key].get("emoji")]
@@ -256,7 +256,6 @@ def summarize_feedback_for_month(month_days: List, feedback: Dict, month: int) -
         "emoji_counter": emoji_counter,
         "completion_ratio": completion_ratio,
     }
-
 
 def motivation_message(completion_ratio: float) -> str:
     if completion_ratio == 0:
