@@ -294,6 +294,7 @@ def render_calendar_tab():
             with col.container(border=True):
                 st.markdown(f"**{day.day}**")
                 st.caption(badge)
+                
                 if plan["exercises"]:
                     for exercise in plan["exercises"][:3]:
                         st.write(f"- {exercise}")
@@ -309,7 +310,11 @@ def render_calendar_tab():
                 quick_emoji = ["💪", "🔥", "😴", "✅"]
                 for emoji_index, emoji in enumerate(quick_emoji):
                     if quick_cols[emoji_index].button(emoji, key=f"emoji_{iso}_{emoji_index}"):
-                        feedback[iso] = {**fb, "emoji": emoji, "duration": fb.get("duration", plan["duration_min"])}
+                        feedback[iso] = {
+                            **fb,
+                            "emoji": emoji,
+                            "duration": fb.get("duration", plan["duration_min"]),
+                        }
                         save_feedback(feedback)
                         st.session_state["selected_date"] = iso
 
@@ -349,7 +354,11 @@ def render_calendar_tab():
                 value=int(selected_feedback.get("duration", selected_plan.get("duration_min", 30))),
             )
             if st.button("Сохранить день"):
-                feedback[selected_date] = {"emoji": new_emoji, "comment": new_comment, "duration": int(new_duration)}
+                feedback[selected_date] = {
+                    "emoji": new_emoji,
+                    "comment": new_comment,
+                    "duration": int(new_duration),
+                }
                 save_feedback(feedback)
                 st.success("Изменения сохранены.")
 
