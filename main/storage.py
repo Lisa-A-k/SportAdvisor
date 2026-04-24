@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import json
 from datetime import date, datetime
 from pathlib import Path
@@ -9,6 +8,7 @@ from data import DEFAULT_PROFILE
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 DATA_FILE = DATA_DIR / "user_data.json"
+
 
 def build_app_data() -> Dict:
     return {
@@ -20,7 +20,8 @@ def build_app_data() -> Dict:
         "view_month": st.session_state.get("view_month"),
         "saved_at": datetime.now().isoformat(),
     }
-    
+
+
 def apply_app_data(data: Dict) -> None:
     if "profile" in data:
         merged = DEFAULT_PROFILE.copy()
@@ -37,12 +38,22 @@ def apply_app_data(data: Dict) -> None:
         st.session_state["view_year"] = data["view_year"]
     if "view_month" in data:
         st.session_state["view_month"] = data["view_month"]
+
+
 def save_app_data_to_disk() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    DATA_FILE.write_text(
-        json.dumps(build_app_data(), ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    payload = json.dumps(build_app_data(), ensure_ascii=False, indent=2)
+
+    if DATA_FILE.exists():
+        try:
+            current_payload = DATA_FILE.read_text(encoding="utf-8")
+            if current_payload == payload:
+                return
+        except OSError:
+            pass
+
+    DATA_FILE.write_text(payload, encoding="utf-8")
+
 
 def load_app_data_from_disk() -> Optional[Dict]:
     if not DATA_FILE.exists():
@@ -51,6 +62,7 @@ def load_app_data_from_disk() -> Optional[Dict]:
         return json.loads(DATA_FILE.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return None
+
 
 def init_session_state() -> None:
     if "storage_initialized" in st.session_state:
@@ -70,15 +82,19 @@ def init_session_state() -> None:
 
     st.session_state["storage_initialized"] = True
 
-def load_feedback() -> dict:
+
+def load_feedback() -> Dict:
     return st.session_state.get("feedback_list", {})
 
-def save_feedback(feedback: dict) -> None:
+
+def save_feedback(feedback: Dict) -> None:
     st.session_state["feedback_list"] = feedback
     save_app_data_to_disk()
 
+
 def export_app_data() -> str:
     return json.dumps(build_app_data(), ensure_ascii=False, indent=2)
+
 
 def import_app_data(uploaded_file) -> None:
     data = json.load(uploaded_file)
