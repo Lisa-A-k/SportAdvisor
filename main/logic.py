@@ -5,6 +5,13 @@ from collections import Counter
 from datetime import date, timedelta
 from typing import Dict, List, Optional, Set, Tuple
 
+from data import (
+    CONSERVATIVE_SPORTS_FOR_SPECIAL_HEALTH,
+    EXERCISES_BY_CATEGORY,
+    PSYCHOLOGY_GROUPS,
+    SPORT_DB,
+)
+
 QUALITY_ORDER = ["Сила", "Выносливость", "Ловкость", "Гибкость", "Координация"]
 
 TRAINING_CATEGORY_SEQUENCE = [
