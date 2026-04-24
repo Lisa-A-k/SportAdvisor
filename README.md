@@ -12,6 +12,7 @@ Streamlit
 Pandas
 Matplotlib
 NumPy
+
 Project structure:
 main/app.py - Streamlit UI
 main/data.py - dictionaries and static app data
