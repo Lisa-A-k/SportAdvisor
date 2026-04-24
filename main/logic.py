@@ -19,6 +19,36 @@ def normalize_health_group(group: str) -> str:
 def is_special_health_group(group: str) -> bool:
     return group in {"IIIa", "IIIb"}
 
+def allowed_risk_levels_for_health_group(group: str) -> set[str]:
+    if group in {"I"}:
+        return {"low", "medium", "high"}
+    if group in {"II"}:
+        return {"low", "medium", "high"}
+    if group in {"III"}:
+        return {"low", "medium"}
+    if group in {"IIIa", "IIIb"}:
+        return {"low"}
+    return {"low", "medium"}
+
+def health_group_score_adjustment(group: str, risk_level: str) -> tuple[int, str | None]:
+    if group == "I":
+        return 0, None
+    if group == "II":
+        if risk_level == "high":
+            return -18, "снижено в рейтинге из-за высокой интенсивности для II группы здоровья"
+        if risk_level == "medium":
+            return -5, "умеренная нагрузка учтена с осторожностью для II группы здоровья"
+        return 6, "щадящая нагрузка хорошо подходит для II группы здоровья"
+    if group == "III":
+        if risk_level == "medium":
+            return -10, "умеренная нагрузка учтена осторожно для III группы здоровья"
+        if risk_level == "low":
+            return 10, "щадящий формат лучше подходит для III группы здоровья"
+    if group in {"IIIa", "IIIb"}:
+        if risk_level == "low":
+            return 12, "щадящий формат подобран с учетом IIIa/IIIb"
+    return 0, None
+
 def compute_qualities(profile: dict) -> dict:
     push_ups = max(0, int(profile.get("push_ups", 0)))
     squats = max(0, int(profile.get("squats", 0)))
@@ -65,6 +95,12 @@ def score_sport_match(profile: dict, sport_name: str, sport_info: dict, psych_gr
     if health_ok:
         score += 25
         reasons.append("подходит по группе здоровья")
+     raw_health_group = profile.get("health_group", "I")
+    risk_level = sport_info.get("risk_level", "medium")
+    risk_adjustment, risk_reason = health_group_score_adjustment(raw_health_group, risk_level)
+    score += risk_adjustment
+    if risk_reason:
+        reasons.append(risk_reason)
 
     preferred_env = set(profile.get("environment_pref", []))
     sport_env = set(sport_info.get("environment", []))
@@ -104,10 +140,13 @@ def recommend_sports(profile: dict, psych_group: str, limit: int = 5) -> list[di
     qualities = compute_qualities(profile)
     raw_health_group = profile.get("health_group", "I")
     normalized_health = normalize_health_group(raw_health_group)
+    allowed_risk_levels = allowed_risk_levels_for_health_group(raw_health_group)
 
     recommendations = []
     for sport_name, sport_info in SPORT_DB.items():
         if normalized_health not in sport_info.get("health", []):
+            continue
+        if sport_info.get("risk_level", "medium") not in allowed_risk_levels:
             continue
         if is_special_health_group(raw_health_group):
             if sport_name not in CONSERVATIVE_SPORTS_FOR_SPECIAL_HEALTH:
