@@ -102,7 +102,6 @@ def render_profile_tab():
         )
 
     st.success("Профиль сохраняется в текущей сессии автоматически.")
-    save_app_data_to_disk()
 
 def render_psychology_tab():
     st.header("Тест на выбор спорта")
