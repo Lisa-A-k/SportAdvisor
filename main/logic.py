@@ -3,7 +3,7 @@ from __future__ import annotations
 import calendar
 from collections import Counter
 
-from data import EXERCISES_BY_CATEGORY, PSYCHOLOGY_GROUPS, SPORT_DB
+from data import CONSERVATIVE_SPORTS_FOR_SPECIAL_HEALTH, EXERCISES_BY_CATEGORY, PSYCHOLOGY_GROUPS, SPORT_DB
 
 
 QUALITY_ORDER = ["Сила", "Выносливость", "Ловкость", "Гибкость", "Координация"]
@@ -15,7 +15,9 @@ def normalize_health_group(group: str) -> str:
     if group.startswith("III"):
         return "III"
     return group
-
+    
+def is_special_health_group(group: str) -> bool:
+    return group in {"IIIa", "IIIb"}
 
 def compute_qualities(profile: dict) -> dict:
     push_ups = max(0, int(profile.get("push_ups", 0)))
@@ -100,12 +102,18 @@ def score_sport_match(profile: dict, sport_name: str, sport_info: dict, psych_gr
 
 def recommend_sports(profile: dict, psych_group: str, limit: int = 5) -> list[dict]:
     qualities = compute_qualities(profile)
-    normalized_health = normalize_health_group(profile.get("health_group", "I"))
+    raw_health_group = profile.get("health_group", "I")
+    normalized_health = normalize_health_group(raw_health_group)
 
     recommendations = []
     for sport_name, sport_info in SPORT_DB.items():
         if normalized_health not in sport_info.get("health", []):
             continue
+        if is_special_health_group(raw_health_group):
+            if sport_name not in CONSERVATIVE_SPORTS_FOR_SPECIAL_HEALTH:
+                continue
+            if sport_info.get("risk_level") in {"medium", "high"}:
+                continue
         score, reasons = score_sport_match(profile, sport_name, sport_info, psych_group, qualities)
         recommendations.append(
             {
