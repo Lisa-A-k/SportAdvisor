@@ -2,12 +2,19 @@ from __future__ import annotations
 
 import calendar
 from collections import Counter
-from datetime import date,timedelta
+from datetime import date, timedelta
 from typing import Dict, List, Optional, Set, Tuple
 
-from data import CONSERVATIVE_SPORTS_FOR_SPECIAL_HEALTH, EXERCISES_BY_CATEGORY, PSYCHOLOGY_GROUPS, SPORT_DB
+from data import (
+    CONSERVATIVE_SPORTS_FOR_SPECIAL_HEALTH,
+    EXERCISES_BY_CATEGORY,
+    PSYCHOLOGY_GROUPS,
+    SPORT_DB,
+)
+
 
 QUALITY_ORDER = ["Сила", "Выносливость", "Ловкость", "Гибкость", "Координация"]
+
 TRAINING_CATEGORY_SEQUENCE = [
     "руки/спина",
     "ноги",
@@ -16,6 +23,7 @@ TRAINING_CATEGORY_SEQUENCE = [
     "комплексная",
     "растяжка",
 ]
+
 
 def normalize_health_group(group: str) -> str:
     if not group:
@@ -28,12 +36,13 @@ def normalize_health_group(group: str) -> str:
 def is_special_health_group(group: str) -> bool:
     return group in {"IIIa", "IIIb"}
 
+
 def allowed_risk_levels_for_health_group(group: str) -> Set[str]:
-    if group in {"I"}:
+    if group == "I":
         return {"low", "medium", "high"}
-    if group in {"II"}:
+    if group == "II":
         return {"low", "medium", "high"}
-    if group in {"III"}:
+    if group == "III":
         return {"low", "medium"}
     if group in {"IIIa", "IIIb"}:
         return {"low"}
@@ -54,9 +63,8 @@ def health_group_score_adjustment(group: str, risk_level: str) -> Tuple[int, Opt
             return -10, "умеренная нагрузка учтена осторожно для III группы здоровья"
         if risk_level == "low":
             return 10, "щадящий формат лучше подходит для III группы здоровья"
-    if group in {"IIIa", "IIIb"}:
-        if risk_level == "low":
-            return 12, "щадящий формат подобран с учетом IIIa/IIIb"
+    if group in {"IIIa", "IIIb"} and risk_level == "low":
+        return 12, "щадящий формат подобран с учетом IIIa/IIIb"
     return 0, None
 
 
@@ -74,10 +82,15 @@ def compute_qualities(profile: Dict) -> Dict:
     fatigue_score = {"никогда": 3, "редко": 2, "иногда": 1, "часто": 0}.get(fatigue, 1)
     endurance = min(10, round(min(5, weekly_activity) + min(3, plank_sec / 75) + fatigue_score))
     agility = min(10, round(min(5, jumps_30s / 8) + min(2, squats / 30) + (2 if balance_test == "да" else 0)))
-    flexibility = min(10, round(1 + flexibility_reach * 1.8))
+    flexibility = min(10, round(1 + flexibility_reach * 2))
     coordination = min(
         10,
-        round(min(3, plank_sec / 60) + min(3, jumps_30s / 15) + min(2, flexibility_reach / 2) + (2 if balance_test == "да" else 0)),
+        round(
+            min(3, plank_sec / 60)
+            + min(3, jumps_30s / 15)
+            + min(2, flexibility_reach / 2)
+            + (2 if balance_test == "да" else 0)
+        ),
     )
 
     return {
@@ -105,11 +118,10 @@ def score_sport_match(
     qualities: Dict,
 ) -> Tuple[int, List[str]]:
     score = 0
-    reasons = []
+    reasons: List[str] = []
 
     normalized_health = normalize_health_group(profile.get("health_group", "I"))
-    health_ok = normalized_health in sport_info.get("health", [])
-    if health_ok:
+    if normalized_health in sport_info.get("health", []):
         score += 25
         reasons.append("подходит по группе здоровья")
 
@@ -154,13 +166,14 @@ def score_sport_match(
 
     return score, reasons
 
+
 def recommend_sports(profile: Dict, psych_group: str, limit: int = 5) -> List[Dict]:
     qualities = compute_qualities(profile)
     raw_health_group = profile.get("health_group", "I")
     normalized_health = normalize_health_group(raw_health_group)
     allowed_risk_levels = allowed_risk_levels_for_health_group(raw_health_group)
 
-    recommendations = []
+    recommendations: List[Dict] = []
     for sport_name, sport_info in SPORT_DB.items():
         if normalized_health not in sport_info.get("health", []):
             continue
@@ -187,12 +200,12 @@ def recommend_sports(profile: Dict, psych_group: str, limit: int = 5) -> List[Di
 
     recommendations.sort(key=lambda item: item["score"], reverse=True)
     return recommendations[:limit]
-    
+
+
 def get_training_weekdays(rest_days: List[int]) -> List[int]:
     training_days = [day for day in range(7) if day not in rest_days]
     return training_days or [0, 2, 4]
 
- - timedelta(days=current_date.weekday())
 
 def get_category_for_day(day: date, training_weekdays: List[int]) -> str:
     year_anchor = date(day.year, 1, 1)
@@ -202,6 +215,7 @@ def get_category_for_day(day: date, training_weekdays: List[int]) -> str:
     day_slot = training_weekdays.index(day.weekday())
     sequence_index = (week_index * len(training_weekdays) + day_slot) % len(TRAINING_CATEGORY_SEQUENCE)
     return TRAINING_CATEGORY_SEQUENCE[sequence_index]
+
 
 def get_progressive_block(day: date, training_weekdays: List[int]) -> int:
     year_anchor = date(day.year, 1, 1)
@@ -232,6 +246,7 @@ def build_exercise_list_for_category(category: str, profile: Dict, base_load: in
 
     return exercises
 
+
 def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: Dict) -> Dict:
     cal = calendar.Calendar(firstweekday=0)
     month_days = [day for day in cal.itermonthdates(year, month) if day.month == month]
@@ -239,9 +254,9 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
     qualities = compute_qualities(profile)
     load_factor = max(1, round(sum(qualities.values()) / len(qualities) / 2))
     preferred_minutes = int(profile.get("preferred_session_min", 30))
-    plan = {}
     training_weekdays = get_training_weekdays(rest_days)
 
+    plan: Dict = {}
     for day in month_days:
         if day.weekday() in rest_days:
             plan[day.isoformat()] = {
@@ -251,13 +266,11 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
             }
             continue
 
-        days_since_year_start = (day - year_start).days
-        training_block = max(0, days_since_year_start // 7)
         category = get_category_for_day(day, training_weekdays)
         progressive_block = get_progressive_block(day, training_weekdays)
-        base_load = load_factor + training_block
+        base_load = load_factor + progressive_block
         exercises = build_exercise_list_for_category(category, profile, base_load)
-        
+
         warmup = [
             "разминка суставов — 5 мин",
             "легкая кардио-разминка — 3 мин",
@@ -274,6 +287,7 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
         }
 
     return plan
+
 
 def summarize_feedback_for_month(month_days: List, feedback: Dict, month: int) -> Dict:
     month_keys = [day.isoformat() for day in month_days if day.month == month]
@@ -297,6 +311,7 @@ def summarize_feedback_for_month(month_days: List, feedback: Dict, month: int) -
         "emoji_counter": emoji_counter,
         "completion_ratio": completion_ratio,
     }
+
 
 def motivation_message(completion_ratio: float) -> str:
     if completion_ratio == 0:
