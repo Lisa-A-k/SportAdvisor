@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import calendar
 from collections import Counter
+from datetime import date
 from typing import Dict, List, Optional, Set, Tuple
 
 from data import CONSERVATIVE_SPORTS_FOR_SPECIAL_HEALTH, EXERCISES_BY_CATEGORY, PSYCHOLOGY_GROUPS, SPORT_DB
@@ -192,7 +193,7 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
     load_factor = max(1, round(sum(qualities.values()) / len(qualities) / 2))
     preferred_minutes = int(profile.get("preferred_session_min", 30))
     plan = {}
-    training_day_index = 0
+    year_start = date(year, 1, 1)
 
     for day in month_days:
         if day.weekday() in rest_days:
@@ -203,9 +204,10 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
             }
             continue
 
-        category = categories[training_day_index % len(categories)]
-        training_day_index += 1
-        base_load = load_factor + max(0, (training_day_index - 1) // 6)
+        days_since_year_start = (day - year_start).days
+        training_block = max(0, days_since_year_start // 7)
+        category = categories[training_block % len(categories)]
+        base_load = load_factor + training_block
         exercises = []
 
         for exercise in EXERCISES_BY_CATEGORY[category]:
