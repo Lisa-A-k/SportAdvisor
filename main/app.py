@@ -240,6 +240,7 @@ def render_calendar_tab():
     st.header("Календарь тренировок")
     year = st.session_state["view_year"]
     month = st.session_state["view_month"]
+    today = date.today()
     feedback = load_feedback()
 
     nav_left, nav_center, nav_right = st.columns([1, 4, 1])
