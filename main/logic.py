@@ -59,14 +59,14 @@ def compute_qualities(profile: dict) -> dict:
     fatigue = profile.get("fatigue", "иногда")
     balance_test = profile.get("balance_test", "нет")
 
-    strength = min(10, round(min(4, push_ups / 8) + min(3, squats / 20) + min(3, jumps_30s / 12)))
+    strength = min(10, round(min(5, push_ups / 10) + min(3, squats / 25) + min(3, jumps_30s / 15)))
     fatigue_score = {"никогда": 3, "редко": 2, "иногда": 1, "часто": 0}.get(fatigue, 1)
-    endurance = min(10, round(min(5, weekly_activity * 1.2) + min(2, plank_sec / 60) + fatigue_score))
-    agility = min(10, round(min(4, jumps_30s / 10) + min(3, plank_sec / 50) + (2 if balance_test == "да" else 0)))
-    flexibility = min(10, round(flexibility_reach * 2))
+    endurance = min(10, round(min(5, weekly_activity) + min(3, plank_sec / 75) + fatigue_score))
+    agility = min(10, round(min(5, jumps_30s / 8) + min(2, plank_sec / 30) + (2 if balance_test == "да" else 0)))
+    flexibility = min(10, round(1 + flexibility_reach * 1.8))
     coordination = min(
         10,
-        round(min(4, plank_sec / 45) + min(3, flexibility_reach) + (3 if balance_test == "да" else 0)),
+        round(min(3, plank_sec / 60) + min(3,jumps_30s / 15) + min(2, flexibility_reach / 2) + (2 if balance_test == "да" else 0)),
     )
 
     return {
