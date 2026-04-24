@@ -20,6 +20,14 @@ from logic import (
 )
 from storage import export_app_data, import_app_data, init_session_state, load_feedback, save_feedback
 
+EMOJI_LABELS = {
+    "💪": "Силовая тренировка",
+    "🔥": "Интенсивная тренировка",
+    "😴": "Нужен отдых",
+    "✅": "План выполнен",
+    "❤️": "Тренировка понравилась",
+    "": "Без отметки",
+}
 
 def plot_progress_figure(scores: dict):
     labels = list(scores.keys())
@@ -335,11 +343,19 @@ def render_statistics_tab():
 
     st.subheader("Эмоции за месяц")
     if summary["emoji_counter"]:
-        df_emoji = pd.DataFrame(summary["emoji_counter"].items(), columns=["Эмодзи", "Количество"])
+         readable_rows = [
+            {
+                "Отметка": emoji,
+                "Расшифровка": EMOJI_LABELS.get(emoji, "Другая реакция"),
+                "Количество": count,
+            }
+            for emoji, count in summary["emoji_counter"].items()
+        ]
+        df_emoji = pd.DataFrame(readable_rows)
         st.dataframe(df_emoji, hide_index=True)
         fig, ax = plt.subplots()
-        ax.pie(df_emoji["Количество"], labels=df_emoji["Эмодзи"], autopct="%d%%")
-        ax.set_title("Распределение эмоций")
+        ax.pie(df_emoji["Количество"], labels=df_emoji["Расшифровка"], autopct="%d%%")
+        ax.set_title("Распределение состояний по тренировкам")
         st.pyplot(fig)
     else:
         st.info("Пока нет отмеченных тренировочных дней.")
