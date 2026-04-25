@@ -340,14 +340,24 @@ def render_calendar_tab():
                 )
 
                 st.caption(badge)
+       
+                week_num = plan.get("week", 1)
+                
+                if plan.get("exercises"):
+                    # Показываем номер недели ярким бейджем
+                    st.markdown(f"<span style='background:#ff6b6b;color:white;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:bold;'>📅 Неделя {week_num}</span>", unsafe_allow_html=True)
 
-                if plan["exercises"]:
-                    for exercise in plan["exercises"][:3]:
-                        st.write(f"- {exercise}")
-                    if len(plan["exercises"]) > 3:
-                        st.caption(f"Еще упражнений в плане: {len(plan['exercises']) - 3}")
+                    for exercise in plan["exercises"][:4]:  
+                        if " — " in exercise:
+                            name, value = exercise.split(" — ", 1)
+                            st.write(f"- **{name}**: {value}")
+                        else:
+                            st.write(f"- {exercise}")
+                    
+                    if len(plan["exercises"]) > 4:
+                        st.caption(f"📝 Ещё {len(plan['exercises']) - 4} упражнений")
                 else:
-                    st.write("Отдых")
+                    st.markdown("**🛌 День отдыха**")
 
                 if st.button(f"Открыть {iso}", key=f"open_{iso}"):
                     st.session_state["selected_date"] = iso
