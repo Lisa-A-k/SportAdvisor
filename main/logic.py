@@ -227,10 +227,7 @@ def get_progressive_block(day: date, training_weekdays: List[int]) -> int:
 
 
 def build_exercise_list_for_category(category: str, profile: Dict, base_load: int) -> List[str]:
-    """
-    Генерирует список упражнений с прогрессией нагрузки.
-    base_load: рассчитывается как load_factor + progressive_block (недели)
-    """
+
     equipment = set(profile.get("equipment", []))
     exercises: List[str] = []
     
@@ -243,7 +240,7 @@ def build_exercise_list_for_category(category: str, profile: Dict, base_load: in
     # === НАСТРОЙКА ПРОГРЕССИИ ===
     # Базовый множитель: 1.0 + (неделя * 0.15) = +15% в неделю
     # Максимум +60% за 4 недели, потом плато
-    progression_multiplier = 1.0 + min(base_load - 1, 4) * 0.15
+    progression_multiplier = 1.0 + min(base_load - 1) * 0.25
 
     # Базовые значения упражнений (от которых считаем прогрессию)
     base_exercise_values = {
@@ -344,6 +341,7 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
                 "type": "отдых",
                 "duration_min": 0,
                 "exercises": [],
+                "week": 0,  # Неделя не считается для отдыха
             }
             continue
 
@@ -351,6 +349,8 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
         progressive_block = get_progressive_block(day, training_weekdays)
         base_load = load_factor + progressive_block
         exercises = build_exercise_list_for_category(category, profile, base_load)
+
+        week_num = progressive_block + 1  # Неделя 1, 2, 3, 4...
 
         warmup = [
             "разминка суставов — 5 мин",
@@ -365,10 +365,10 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
             "type": category,
             "duration_min": max(preferred_minutes, 25),
             "exercises": warmup + exercises + cooldown,
+            "week": week_num,  # Сохраняем номер недели
         }
 
     return plan
-
 
 def summarize_feedback_for_month(month_days: List, feedback: Dict, month: int) -> Dict:
     month_keys = [day.isoformat() for day in month_days if day.month == month]
