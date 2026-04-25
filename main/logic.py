@@ -237,7 +237,7 @@ def build_exercise_list_for_category(category: str, profile: Dict, base_load: in
     plank_sec = max(10, int(profile.get("plank_sec", 0)))
     jumps_30s = max(1, int(profile.get("jumps_30s", 0)))
     
-    progression_multiplier = 1.0 + min(base_load - 1, 4) * 0.25
+    progression_multiplier = 1.0 + (base_load - 1) * 0.25
 
     # Базовые значения упражнений (от которых считаем прогрессию)
     base_exercise_values = {
