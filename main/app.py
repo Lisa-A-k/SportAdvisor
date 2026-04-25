@@ -283,6 +283,11 @@ def render_calendar_tab():
 
     rest_days = st.session_state.get("rest_days", [6])
     monthly_plan = generate_monthly_plan(year, month, rest_days, st.session_state["profile"])
+    for iso_test, plan_test in monthly_plan.items():
+    if plan_test.get("exercises"):
+        st.warning(f"🔍 ОТЛАДКА: {iso_test} | Неделя: {plan_test.get('week', 'НЕТ')} | Упражнений: {len(plan_test.get('exercises', []))}")
+        st.write(f"Первое упражнение: {plan_test['exercises'][0] if plan_test['exercises'] else 'НЕТ'}")
+        break  
     cal = calendar.Calendar(firstweekday=0)
     month_days = list(cal.itermonthdates(year, month))
 
