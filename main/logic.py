@@ -344,7 +344,7 @@ def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: 
 
         category = get_category_for_day(day, training_weekdays)
         progressive_block = get_progressive_block(day, training_weekdays)
-        base_load = l + progressive_block
+        base_load = 1 + progressive_block
         
         exercises = build_exercise_list_for_category(category, profile, base_load)
         week_num = progressive_block + 1
