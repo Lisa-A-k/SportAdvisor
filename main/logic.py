@@ -227,38 +227,50 @@ def get_progressive_block(day: date, training_weekdays: List[int]) -> int:
 
 
 def build_exercise_list_for_category(category: str, profile: Dict, base_load: int) -> List[str]:
+    """
+    Генерирует список упражнений с прогрессией нагрузки.
+    base_load: рассчитывается как load_factor + progressive_block (недели)
+    """
     equipment = set(profile.get("equipment", []))
     exercises: List[str] = []
+    
+    # Базовые показатели пользователя
     push_ups = max(1, int(profile.get("push_ups", 0)))
     squats = max(1, int(profile.get("squats", 0)))
     plank_sec = max(10, int(profile.get("plank_sec", 0)))
     jumps_30s = max(1, int(profile.get("jumps_30s", 0)))
-    progression_multiplier = 1 + min(base_load - 1, 4) * 0.08
+    
+    # === НАСТРОЙКА ПРОГРЕССИИ ===
+    # Базовый множитель: 1.0 + (неделя * 0.15) = +15% в неделю
+    # Максимум +60% за 4 недели, потом плато
+    progression_multiplier = 1.0 + min(base_load - 1, 4) * 0.15
 
+    # Базовые значения упражнений (от которых считаем прогрессию)
     base_exercise_values = {
-        "отжимания": max(3, round(push_ups * 0.6 * progression_multiplier)),
-        "тяга резинки": max(6, round(push_ups * 0.7 * progression_multiplier)),
-        "лодочка": max(8, round(plank_sec / 6 * progression_multiplier)),
-        "планка с касанием плеч": max(10, round(plank_sec / 5 * progression_multiplier)),
-        "приседания": max(6, round(squats * 0.7 * progression_multiplier)),
-        "выпады": max(6, round(squats * 0.35 * progression_multiplier)),
-        "ягодичный мост": max(8, round(squats * 0.5 * progression_multiplier)),
-        "подъемы на носки": max(12, round(squats * 0.8 * progression_multiplier)),
-        "планка": max(15, round(plank_sec * 0.6 * progression_multiplier)),
-        "скручивания": max(8, round(squats * 0.45 * progression_multiplier)),
-        "велосипед": max(10, round(jumps_30s * 0.6 * progression_multiplier)),
-        "подъем ног": max(6, round(plank_sec / 8 * progression_multiplier)),
-        "наклон к полу": max(20, round(plank_sec * 0.5 * progression_multiplier)),
-        "бабочка": max(20, round(plank_sec * 0.5 * progression_multiplier)),
-        "кошка-корова": max(20, round(plank_sec * 0.45 * progression_multiplier)),
-        "поза ребенка": max(25, round(plank_sec * 0.55 * progression_multiplier)),
-        "бег на месте": max(20, round(jumps_30s * 1.1 * progression_multiplier)),
-        "берпи": max(4, round(push_ups * 0.35 * progression_multiplier)),
-        "прыжки": max(10, round(jumps_30s * 0.8 * progression_multiplier)),
-        "шаги в планке": max(8, round(push_ups * 0.5 * progression_multiplier)),
+        "отжимания": max(3, round(push_ups * 0.6)),
+        "тяга резинки": max(6, round(push_ups * 0.7)),
+        "лодочка": max(8, round(plank_sec / 6)),
+        "планка с касанием плеч": max(10, round(plank_sec / 5)),
+        "приседания": max(6, round(squats * 0.7)),
+        "выпады": max(6, round(squats * 0.35)),
+        "ягодичный мост": max(8, round(squats * 0.5)),
+        "подъемы на носки": max(12, round(squats * 0.8)),
+        "планка": max(15, round(plank_sec * 0.6)),
+        "скручивания": max(8, round(squats * 0.45)),
+        "велосипед": max(10, round(jumps_30s * 0.6)),
+        "подъем ног": max(6, round(plank_sec / 8)),
+        "наклон к полу": max(20, round(plank_sec * 0.5)),
+        "бабочка": max(20, round(plank_sec * 0.5)),
+        "кошка-корова": max(20, round(plank_sec * 0.45)),
+        "поза ребенка": max(25, round(plank_sec * 0.55)),
+        "бег на месте": max(20, round(jumps_30s * 1.1)),
+        "берпи": max(4, round(push_ups * 0.35)),
+        "прыжки": max(10, round(jumps_30s * 0.8)),
+        "шаги в планке": max(8, round(push_ups * 0.5)),
     }
 
     for exercise in EXERCISES_BY_CATEGORY[category]:
+        # Комплексные упражнения (круговые)
         if exercise in {"круг: приседания + отжимания + планка", "выпады + прыжки + пресс"}:
             if exercise == "круг: приседания + отжимания + планка":
                 circuit_value = max(
@@ -285,26 +297,37 @@ def build_exercise_list_for_category(category: str, profile: Dict, base_load: in
                     ),
                 )
             exercises.append(f"{exercise} — {circuit_value} повторений на круг")
+        
+        # Упражнения на время (секунды)
         elif "планка" in exercise or "наклон" in exercise or "поза" in exercise or exercise in {"бабочка", "кошка-корова"}:
-            duration_value = base_exercise_values.get(exercise, max(20, round(plank_sec * 0.5 * progression_multiplier)))
-            exercises.append(f"{exercise} — {duration_value} сек")
+            duration_value = base_exercise_values.get(exercise, max(20, round(plank_sec * 0.5)))
+            # Прогрессия для времени: +10 сек в неделю
+            progressed_duration = min(180, round(duration_value * progression_multiplier))  # макс. 3 минуты
+            exercises.append(f"{exercise} — {progressed_duration} сек")
+        
+        # Упражнения на повторения
         else:
-            rep_value = base_exercise_values.get(exercise, max(6, round((push_ups + squats) / 4 * progression_multiplier)))
-            exercises.append(f"{exercise} — {rep_value} повторений")
+            rep_value = base_exercise_values.get(exercise, max(6, round((push_ups + squats) / 4)))
+            # Прогрессия для повторений: +2-3 повтора в неделю
+            progressed_reps = min(50, round(rep_value * progression_multiplier))  # макс. 50 повторов
+            exercises.append(f"{exercise} — {progressed_reps} повторений")
 
+    # Бонусные упражнения при наличии инвентаря
     if category == "руки/спина" and "гантели" in equipment:
-        dumbbell_value = max(6, round(push_ups * 0.6 * progression_multiplier))
-        exercises.append(f"жим гантелей — {dumbbell_value} повторений")
+        dumbbell_value = max(6, round(push_ups * 0.6))
+        progressed = min(40, round(dumbbell_value * progression_multiplier))
+        exercises.append(f"жим гантелей — {progressed} повторений")
     
     if category == "кардио" and "скакалка" in equipment:
-        rope_value = max(20, round(jumps_30s * progression_multiplier))
-        exercises.append(f"прыжки со скакалкой — {rope_value} сек")
+        rope_value = max(20, round(jumps_30s * 1.0))
+        progressed = min(120, round(rope_value * progression_multiplier))  # макс. 2 минуты
+        exercises.append(f"прыжки со скакалкой — {progressed} сек")
     
     if category in {"пресс", "растяжка"} and "коврик" in equipment:
         exercises.append("упражнения на коврике — комфортный темп")
 
     return exercises
-
+    
 def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: Dict) -> Dict:
     cal = calendar.Calendar(firstweekday=0)
     month_days = [day for day in cal.itermonthdates(year, month) if day.month == month]
