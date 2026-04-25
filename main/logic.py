@@ -258,7 +258,6 @@ def build_exercise_list_for_category(category: str, profile: Dict, base_load: in
         "шаги в планке": max(8, round(push_ups * 0.5 * progression_multiplier)),
     }
 
-
     for exercise in EXERCISES_BY_CATEGORY[category]:
         if exercise in {"круг: приседания + отжимания + планка", "выпады + прыжки + пресс"}:
             if exercise == "круг: приседания + отжимания + планка":
@@ -290,20 +289,21 @@ def build_exercise_list_for_category(category: str, profile: Dict, base_load: in
             duration_value = base_exercise_values.get(exercise, max(20, round(plank_sec * 0.5 * progression_multiplier)))
             exercises.append(f"{exercise} — {duration_value} сек")
         else:
-           rep_value = base_exercise_values.get(exercise, max(6, round((push_ups + squats) / 4 * progression_multiplier)))
+            rep_value = base_exercise_values.get(exercise, max(6, round((push_ups + squats) / 4 * progression_multiplier)))
             exercises.append(f"{exercise} — {rep_value} повторений")
 
     if category == "руки/спина" and "гантели" in equipment:
         dumbbell_value = max(6, round(push_ups * 0.6 * progression_multiplier))
         exercises.append(f"жим гантелей — {dumbbell_value} повторений")
+    
     if category == "кардио" and "скакалка" in equipment:
-       rope_value = max(20, round(jumps_30s * progression_multiplier))
+        rope_value = max(20, round(jumps_30s * progression_multiplier))
         exercises.append(f"прыжки со скакалкой — {rope_value} сек")
+    
     if category in {"пресс", "растяжка"} and "коврик" in equipment:
         exercises.append("упражнения на коврике — комфортный темп")
 
     return exercises
-
 
 def generate_monthly_plan(year: int, month: int, rest_days: List[int], profile: Dict) -> Dict:
     cal = calendar.Calendar(firstweekday=0)
